@@ -1,0 +1,32 @@
+# Dependencias
+**/node_modules/
+
+# Builds
+**/dist/
+**/build/
+
+# Variables de entorno y credenciales
+.env
+.env.local
+.env.*.local
+backend/.env
+backend/src/config/credentials/
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Editor / SO
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Temporales
+*.tmp
+*.bak
+
+# Configuracion local Claude Code (no versionar)
+.claude/settings.local.json
