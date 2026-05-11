@@ -23,19 +23,18 @@ export default function GuiasSimpleTable({ awbs, consignatarioNombre, manifiesto
       <div className="px-4 py-3 border-b border-border flex items-center gap-2">
         <IconBox />
         <h3 className="text-sm font-semibold tracking-wide text-slate-700 uppercase">
-          Track de carga importaciones
+          Guías asociadas
         </h3>
-        <span className="text-xs text-muted ml-auto">{awbs.length} guias</span>
+        <span className="text-xs text-muted ml-auto">{awbs.length} guías</span>
       </div>
       <table className="w-full text-sm">
         <thead>
           <tr className="text-left text-[10px] tracking-wide uppercase text-muted border-b border-border bg-slate-50">
             <Th>Nº Manifiesto / Consignatario</Th>
-            <Th>Nº Guía Madre</Th>
+            <Th>Nº Guía Master</Th>
             <Th>Nº Guía Hija</Th>
             <Th>Estado<br/>Inventario</Th>
-            <Th>Línea aérea / Nº Volante</Th>
-            <Th>Estado de tracking</Th>
+            <Th>Estado de Proceso</Th>
             <Th></Th>
           </tr>
         </thead>
@@ -51,7 +50,7 @@ export default function GuiasSimpleTable({ awbs, consignatarioNombre, manifiesto
               >
                 <Td>
                   <div className="text-xs text-muted">{manifiesto}</div>
-                  <div className="data-bold text-sm">{consignatarioNombre || 'TEMU PERU S.A.C.'}</div>
+                  <div className="data-bold text-sm">{consignatarioNombre || 'PERU BOX S.A.C.'}</div>
                 </Td>
                 <Td className="data-bold">{a.awb}</Td>
                 <Td className="text-xs text-muted">{a.hawb || '—'}</Td>
@@ -60,10 +59,6 @@ export default function GuiasSimpleTable({ awbs, consignatarioNombre, manifiesto
                     {inv.label}
                     {a.estado_inventario !== 'OK' && <IconInfo />}
                   </span>
-                </Td>
-                <Td>
-                  <div className="data-bold text-xs">{a.aerolinea}</div>
-                  <div className="text-[11px] text-muted">{a.canal_dam?.numero || '—'}</div>
                 </Td>
                 <Td>
                   <span className={`inline-flex items-center px-3 py-1 rounded-md text-[11px] font-bold uppercase tracking-wide ${trk.bg} ${trk.text}`}>

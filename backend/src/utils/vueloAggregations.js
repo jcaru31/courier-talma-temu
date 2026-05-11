@@ -10,12 +10,12 @@ function pasoTraslado(awb) {
 function pasoRecepcion(awb) {
   return awb.timeline?.recepcion?.estado === 'COMPLETADO';
 }
-function pasoTarjado(awb) {
-  return awb.timeline?.tarja?.estado === 'COMPLETADO';
-}
 function pasoTransmisiones(awb) {
   const subs = awb.timeline?.aduanas?.subeventos || [];
   return subs.some((s) => /transmision/i.test(s.nombre) && s.estado === 'COMPLETADO');
+}
+function pasoAlmacenamiento(awb) {
+  return awb.timeline?.almacenamiento?.estado === 'COMPLETADO';
 }
 function pasoFacturacion(awb) {
   const subs = awb.timeline?.despacho_eseer?.subeventos || [];
@@ -27,10 +27,10 @@ function pasoDespacho(awb) {
 
 const ETAPAS = [
   { key: 'traslado', label: 'Traslado', test: pasoTraslado },
-  { key: 'recepcion', label: 'Recepcion', test: pasoRecepcion },
-  { key: 'tarjado', label: 'Tarjado', test: pasoTarjado },
+  { key: 'recepcion', label: 'Recepción', test: pasoRecepcion },
   { key: 'transmisiones', label: 'Transmisiones', test: pasoTransmisiones },
-  { key: 'facturacion', label: 'Facturacion', test: pasoFacturacion },
+  { key: 'almacenamiento', label: 'Almacenamiento', test: pasoAlmacenamiento },
+  { key: 'facturacion', label: 'Facturación', test: pasoFacturacion },
   { key: 'despacho', label: 'Despacho', test: pasoDespacho },
 ];
 
@@ -52,6 +52,16 @@ function determinarEstadoTracking(awb) {
   return 'RECEPCION';
 }
 
+const AEROLINEA_SHORT = {
+  'LATAM AIRLINES': 'LATAM',
+  'ATLAS AIR INC.': 'ATLAS',
+  'IBERIA LINEAS AEREAS': 'IBERIA',
+};
+
+function shortName(aerolinea) {
+  return AEROLINEA_SHORT[aerolinea] || (aerolinea ? aerolinea.split(' ')[0] : '—');
+}
+
 function agruparPorVuelo(awbs, alertas) {
   const mapa = new Map();
   for (const awb of awbs) {
@@ -61,6 +71,7 @@ function agruparPorVuelo(awbs, alertas) {
         manifiesto: awb.manifiesto,
         vuelo: awb.vuelo,
         aerolinea: awb.aerolinea,
+        aerolinea_short: shortName(awb.aerolinea),
         origen: awb.origen,
         destino: awb.destino,
         eta: awb.eta,
@@ -104,11 +115,13 @@ function agruparPorVuelo(awbs, alertas) {
       manifiesto: v.manifiesto,
       vuelo: v.vuelo,
       aerolinea: v.aerolinea,
+      aerolinea_short: v.aerolinea_short,
       origen: v.origen,
       destino: v.destino,
       eta: v.eta,
       fecha: v.fecha,
       tipo_vuelo: v.tipo_vuelo,
+      trazabilidad: calcularTrazabilidad(v.awbs),
       total_awbs: totalAwbs,
       bultos_esperados: bultosEsperados,
       bultos_recibidos: bultosRecibidos,

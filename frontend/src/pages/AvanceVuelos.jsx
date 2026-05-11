@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import VuelosTable from '../components/vuelos/VuelosTable.jsx';
+import LeyendaTabla from '../components/vuelos/LeyendaTabla.jsx';
 import AutoRefreshCounter from '../components/shared/AutoRefreshCounter.jsx';
 import { useAutoRefresh } from '../hooks/useAutoRefresh.js';
 import { useVuelos } from '../hooks/useVuelos.js';
@@ -22,7 +23,7 @@ export default function AvanceVuelos() {
         <div className="flex items-center gap-3">
           <IconAvionBig />
           <h1 className="text-base font-semibold tracking-wide text-slate-700 uppercase">
-            Avance de vuelos importaciones
+            Avance de vuelos importaciones - TEMU
           </h1>
         </div>
         <div className="flex items-center gap-4">
@@ -61,6 +62,8 @@ export default function AvanceVuelos() {
       {error && (
         <div className="card p-4 border-danger text-danger text-sm">Error: {error}</div>
       )}
+
+      <LeyendaTabla />
 
       <VuelosTable items={items} loading={loading} />
     </div>

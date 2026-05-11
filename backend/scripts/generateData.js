@@ -18,14 +18,9 @@ const OUT = path.join(__dirname, '..', 'data', 'courier_data.json');
 const TOTAL = 250;
 
 const AEROLINEAS = [
-  { code: 'LA', nombre: 'LATAM AIRLINES S.A.' },
-  { code: 'AA', nombre: 'AMERICAN AIRLINES INC.' },
-  { code: 'CM', nombre: 'COPA AIRLINES' },
-  { code: 'AV', nombre: 'AVIANCA' },
-  { code: 'IB', nombre: 'IBERIA LINEAS AEREAS' },
-  { code: 'KL', nombre: 'KLM ROYAL DUTCH AIRLINES' },
-  { code: 'AF', nombre: 'AIR FRANCE' },
-  { code: 'UA', nombre: 'UNITED AIRLINES' },
+  { code: 'LA', nombre: 'LATAM AIRLINES', short: 'LATAM' },
+  { code: '5Y', nombre: 'ATLAS AIR INC.', short: 'ATLAS' },
+  { code: 'IB', nombre: 'IBERIA LINEAS AEREAS', short: 'IBERIA' },
 ];
 
 const ORIGENES = [
@@ -471,9 +466,9 @@ function main() {
     clientes: [
       {
         id: 'CLI-TEMU',
-        nombre: 'TEMU PERU S.A.C.',
+        nombre: 'PERU BOX S.A.C.',
         ruc: '20611298745',
-        emails_notificaciones: ['luis.mullisaca@pucp.pe', 'operaciones.lim@temu.com'],
+        emails_notificaciones: ['luis.mullisaca@pucp.pe', 'operaciones.lim@perubox.com'],
         whatsapp_notificaciones: ['+51999888777'],
         contactos: [
           {
