@@ -4,9 +4,16 @@
 
 @layer base {
   html, body, #root { height: 100%; }
+  html {
+    /* Base font size 17px: escalado global, todas las medidas tailwind crecen proporcional */
+    font-size: 17px;
+  }
   body {
     @apply font-sans text-slate-800 antialiased;
+    font-feature-settings: 'cv11', 'ss01';
+    letter-spacing: -0.005em;
   }
+  h1, h2, h3, h4 { letter-spacing: -0.015em; }
 }
 
 @layer components {
@@ -14,7 +21,7 @@
     @apply bg-card rounded-lg border border-border;
   }
   .label-xs {
-    @apply text-[10px] tracking-wide uppercase text-muted font-medium;
+    @apply text-[12px] tracking-wider uppercase text-muted font-semibold;
   }
   .data-bold {
     @apply font-semibold text-slate-900;

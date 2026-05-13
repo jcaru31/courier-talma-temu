@@ -10,22 +10,33 @@ export default function DetalleAWB() {
   const navigate = useNavigate();
   const { awb, loading, error, refetch } = useAwbDetail(id);
 
+  const volverAlVuelo = () => {
+    if (awb?.manifiesto) {
+      navigate(`/vuelos/${encodeURIComponent(awb.manifiesto)}`);
+    } else {
+      navigate('/vuelos');
+    }
+  };
+
   return (
     <div className="p-6 space-y-4">
       {/* Top bar */}
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div className="flex items-center gap-3">
           <button
-            onClick={() => navigate('/courier')}
+            onClick={volverAlVuelo}
             className="flex items-center gap-2 px-4 py-2 bg-navy text-white rounded-md text-sm font-medium hover:bg-navy-700"
+            title={awb?.manifiesto ? `Volver al vuelo ${awb.vuelo}` : 'Volver al listado'}
           >
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <line x1="19" y1="12" x2="5" y2="12" />
               <polyline points="12 19 5 12 12 5" />
             </svg>
-            Volver
+            Volver al vuelo
           </button>
-          <h1 className="text-base font-semibold text-slate-700">Tracking Importaciones</h1>
+          <h1 className="text-base font-semibold text-slate-700">
+            Tracking Importaciones {awb?.awb && <span className="text-slate-400 font-normal">— {awb.awb}</span>}
+          </h1>
         </div>
         <div className="flex items-center gap-3">
           <button className="flex items-center gap-2 px-4 py-2 border border-ok text-ok rounded-md text-sm font-medium hover:bg-emerald-50">
@@ -58,11 +69,11 @@ export default function DetalleAWB() {
           {/* Header con datos */}
           <HeaderAWB awb={awb} />
 
-          {/* Timeline horizontal */}
-          <TimelineHorizontal timeline={awb.timeline} />
+          {/* Timeline horizontal con los 5 hitos */}
+          <TimelineHorizontal awb={awb} />
 
-          {/* Subeventos en columnas debajo */}
-          <SubeventosColumns timeline={awb.timeline} />
+          {/* Subeventos por hito */}
+          <SubeventosColumns awb={awb} />
         </>
       )}
     </div>

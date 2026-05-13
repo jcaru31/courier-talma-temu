@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { api } from '../services/api.js';
 
 export function useVuelos(filtros = {}, page = 1, limit = 10) {
-  const [data, setData] = useState({ items: [], total: 0, total_pages: 0 });
+  const [data, setData] = useState({ items: [], total: 0, total_pages: 0, rango: null });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 

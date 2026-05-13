@@ -1,12 +1,77 @@
+import { useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useVueloDetail } from '../hooks/useVuelos.js';
 import VueloHeader from '../components/vuelos/VueloHeader.jsx';
 import GuiasSimpleTable from '../components/vuelos/GuiasSimpleTable.jsx';
 
+const ETAPA_A_TRACKING = {
+  traslado: 'TRASLADO',
+  recepcion: 'RECEPCION',
+  transmisiones: 'TRANSMISIONES',
+  facturacion: 'FACTURACION',
+  despacho: 'DESPACHO',
+};
+
+const LABEL_ETAPA = {
+  traslado: 'En Traslado',
+  recepcion: 'En Recepción',
+  transmisiones: 'En Transmisiones',
+  facturacion: 'En Facturación',
+  despacho: 'Despachadas',
+};
+
+const LABEL_ALERTA = {
+  faltantes: 'Faltantes',
+  parciales: 'Parciales',
+  inmov: 'Inmovilizadas',
+  mal_estado: 'Mal estado',
+};
+
 export default function DetalleVuelo() {
   const { manifiesto } = useParams();
   const navigate = useNavigate();
   const { vuelo, loading, error } = useVueloDetail(manifiesto);
+
+  const [etapaActiva, setEtapaActiva] = useState(null);
+  const [alertaActiva, setAlertaActiva] = useState(null);
+
+  // Al activar uno, limpia el otro (no se combinan).
+  const onEtapaClick = (key) => {
+    setEtapaActiva(key);
+    if (key) setAlertaActiva(null);
+  };
+  const onAlertaClick = (tipo) => {
+    setAlertaActiva(tipo);
+    if (tipo) setEtapaActiva(null);
+  };
+
+  const awbsFiltrados = useMemo(() => {
+    if (!vuelo?.awbs) return [];
+    let lista = vuelo.awbs;
+    if (etapaActiva) {
+      const trackingObjetivo = ETAPA_A_TRACKING[etapaActiva];
+      lista = lista.filter((a) => a.estado_tracking === trackingObjetivo);
+    } else if (alertaActiva === 'faltantes') {
+      // Guia faltante: status === GUIA_FALTANTE (campo guias_faltantes a nivel guia = 1)
+      lista = lista.filter((a) => a.status === 'GUIA_FALTANTE');
+    } else if (alertaActiva === 'parciales') {
+      // Parcial: bultos_faltantes > 0 (excluyendo las totalmente faltantes)
+      lista = lista.filter((a) => a.status !== 'GUIA_FALTANTE' && (a.bultos_faltantes || 0) > 0);
+    } else if (alertaActiva === 'inmov') {
+      // Inmovilizada: canal ROJO sin levante
+      lista = lista.filter((a) => a.canal_dam?.color === 'ROJO' && a.canal_dam?.con_levante === false);
+    } else if (alertaActiva === 'mal_estado') {
+      // Mal estado: bultos_mal_estado > 0
+      lista = lista.filter((a) => (a.bultos_mal_estado || 0) > 0);
+    }
+    return lista;
+  }, [vuelo, etapaActiva, alertaActiva]);
+
+  const filtroActivoLabel = etapaActiva
+    ? LABEL_ETAPA[etapaActiva]
+    : alertaActiva
+    ? LABEL_ALERTA[alertaActiva]
+    : null;
 
   return (
     <div className="p-6 space-y-4">
@@ -33,8 +98,20 @@ export default function DetalleVuelo() {
 
       {vuelo && (
         <>
-          <VueloHeader vuelo={vuelo} />
-          <GuiasSimpleTable awbs={vuelo.awbs} manifiesto={vuelo.manifiesto} />
+          <VueloHeader
+            vuelo={vuelo}
+            etapaActiva={etapaActiva}
+            onEtapaClick={onEtapaClick}
+            alertaActiva={alertaActiva}
+            onAlertaClick={onAlertaClick}
+          />
+          <GuiasSimpleTable
+            awbs={awbsFiltrados}
+            totalSinFiltrar={vuelo.awbs.length}
+            manifiesto={vuelo.manifiesto}
+            filtroActivoLabel={filtroActivoLabel}
+            alturaMaxima="55vh"
+          />
         </>
       )}
     </div>

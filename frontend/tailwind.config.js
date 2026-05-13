@@ -18,7 +18,7 @@ export default {
         border: '#E5E7EB',
       },
       fontFamily: {
-        sans: ['Inter', 'system-ui', '-apple-system', 'Segoe UI', 'Roboto', 'sans-serif'],
+        sans: ['Montserrat', 'Poppins', 'Nunito Sans', 'system-ui', 'Segoe UI', 'sans-serif'],
       },
     },
   },

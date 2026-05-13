@@ -1,71 +1,64 @@
-import EtapaIcono from './EtapaIcono.jsx';
+import EtapaIcono from '../vuelos/EtapaIconos.jsx';
+import { buildHitosAwb } from '../../utils/hitosAwb.js';
 
-const ETAPAS = [
-  { key: 'recepcion', label: 'Recepcion' },
-  { key: 'tarja', label: 'Tarja' },
-  { key: 'almacenamiento', label: 'Almacenamiento' },
-  { key: 'aduanas', label: 'Aduanas' },
-  { key: 'despacho_eseer', label: 'Despacho ESEER' },
-];
+/**
+ * Timeline horizontal de la guia con los 5 hitos del proceso, alineados con
+ * Vista 1 (tabla) y Vista 2 (detalle vuelo): Traslado / Recepcion /
+ * Transmisiones / Facturacion / Despacho.
+ */
+export default function TimelineHorizontal({ awb }) {
+  const hitos = buildHitosAwb(awb);
 
-export default function TimelineHorizontal({ timeline }) {
   return (
     <div className="card p-6">
       <div className="grid grid-cols-5 gap-2">
-        {ETAPAS.map((etapa, i) => {
-          const data = timeline?.[etapa.key];
-          const estado = data?.estado || 'PENDIENTE';
-          const completado = estado === 'COMPLETADO';
-          const enCurso = estado === 'EN_CURSO';
-          const fecha = data?.fecha_fin || data?.fecha_inicio;
-          const dias = data?.dias_estadia;
+        {hitos.map((hito, i) => {
+          const completado = hito.estado === 'COMPLETADO';
+          const enCurso = hito.estado === 'EN_CURSO';
+          const faltante = hito.estado === 'FALTANTE';
+          const activo = completado || enCurso;
+          const nextActivo = i < hitos.length - 1 && (hitos[i + 1].estado === 'COMPLETADO' || hitos[i + 1].estado === 'EN_CURSO');
 
           return (
-            <div key={etapa.key} className="flex flex-col items-center text-center relative">
-              {/* Badge dias estadia (solo almacenamiento) */}
-              {etapa.key === 'almacenamiento' && dias > 0 && (
-                <div className="absolute -top-4 z-10 px-3 py-0.5 rounded-full border border-ok bg-emerald-50 text-ok text-[11px] font-semibold">
-                  {dias} dia{dias !== 1 ? 's' : ''}
-                </div>
-              )}
-
+            <div key={hito.key} className="flex flex-col items-center text-center relative">
               {/* Icono */}
-              <div className="mt-2">
-                <EtapaIcono etapa={etapa.key} activo={completado || enCurso} />
+              <div className={`p-3 rounded-full ${activo ? 'bg-blue-50' : ''}`}>
+                <EtapaIcono etapa={hito.key} activo={activo} size={48} />
               </div>
 
               {/* Label */}
-              <div className={`mt-2 font-semibold text-sm ${completado || enCurso ? 'text-navy' : 'text-slate-400'}`}>
-                {etapa.label}
+              <div
+                className={`mt-2 font-bold text-sm uppercase tracking-wider ${
+                  faltante ? 'text-violet-700' : activo ? 'text-navy' : 'text-slate-400'
+                }`}
+              >
+                {hito.label}
               </div>
 
-              {/* Linea + check */}
+              {/* Lineas + punto */}
               <div className="relative w-full flex items-center justify-center mt-3 h-6">
-                {/* Linea izquierda */}
                 {i > 0 && (
                   <div
                     className={`absolute left-0 top-1/2 -translate-y-1/2 h-1 ${
-                      completado || enCurso ? 'bg-ok' : 'bg-slate-300'
+                      completado ? 'bg-ok' : 'bg-slate-200'
                     }`}
                     style={{ width: '50%' }}
                   />
                 )}
-                {/* Linea derecha */}
-                {i < ETAPAS.length - 1 && (
+                {i < hitos.length - 1 && (
                   <div
                     className={`absolute right-0 top-1/2 -translate-y-1/2 h-1 ${
-                      isNextActivo(timeline, etapa.key) ? 'bg-ok' : 'bg-slate-300'
+                      completado && nextActivo ? 'bg-ok' : 'bg-slate-200'
                     }`}
                     style={{ width: '50%' }}
                   />
                 )}
-                {/* Punto */}
-                <CircleEstado estado={estado} />
+                <CircleEstado estado={hito.estado} />
               </div>
 
               {/* Timestamp */}
               <div className="mt-2 text-[11px] font-semibold text-slate-700 tabular-nums">
-                {fecha ? formatFechaHora(fecha) : '—'}
+                {hito.fecha ? formatFechaHora(hito.fecha) : <span className="text-slate-300">—</span>}
               </div>
             </div>
           );
@@ -78,7 +71,7 @@ export default function TimelineHorizontal({ timeline }) {
 function CircleEstado({ estado }) {
   if (estado === 'COMPLETADO') {
     return (
-      <div className="relative z-10 w-6 h-6 rounded-full bg-ok flex items-center justify-center shadow-sm">
+      <div className="relative z-10 w-6 h-6 rounded-full bg-ok flex items-center justify-center shadow-sm ring-4 ring-white">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round">
           <polyline points="20 6 9 17 4 12" />
         </svg>
@@ -87,26 +80,28 @@ function CircleEstado({ estado }) {
   }
   if (estado === 'EN_CURSO') {
     return (
-      <div className="relative z-10 w-6 h-6 rounded-full bg-warn flex items-center justify-center shadow-sm ring-2 ring-warn/30">
+      <div className="relative z-10 w-6 h-6 rounded-full bg-warn flex items-center justify-center shadow-sm ring-4 ring-white">
         <div className="w-2 h-2 bg-white rounded-full" />
       </div>
     );
   }
+  if (estado === 'FALTANTE') {
+    return (
+      <div className="relative z-10 w-6 h-6 rounded-full bg-violet-500 flex items-center justify-center shadow-sm ring-4 ring-white">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round">
+          <line x1="6" y1="6" x2="18" y2="18" />
+          <line x1="6" y1="18" x2="18" y2="6" />
+        </svg>
+      </div>
+    );
+  }
   return (
-    <div className="relative z-10 w-6 h-6 rounded-full bg-slate-300 border-2 border-white" />
+    <div className="relative z-10 w-6 h-6 rounded-full bg-white border-2 border-slate-300 ring-4 ring-white" />
   );
-}
-
-function isNextActivo(timeline, currentKey) {
-  const idx = ETAPAS.findIndex((e) => e.key === currentKey);
-  const next = ETAPAS[idx + 1];
-  if (!next) return false;
-  const estado = timeline?.[next.key]?.estado;
-  return estado === 'COMPLETADO' || estado === 'EN_CURSO';
 }
 
 function formatFechaHora(iso) {
   const d = new Date(iso);
-  return `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())} HRS`;
+  return `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 function pad(n) { return String(n).padStart(2, '0'); }

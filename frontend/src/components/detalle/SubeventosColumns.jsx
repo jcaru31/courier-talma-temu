@@ -1,24 +1,20 @@
 import { useState } from 'react';
+import { buildHitosAwb } from '../../utils/hitosAwb.js';
 
-const ETAPAS = [
-  { key: 'recepcion', label: 'Recepcion' },
-  { key: 'tarja', label: 'Tarja' },
-  { key: 'almacenamiento', label: 'Almacenamiento' },
-  { key: 'aduanas', label: 'Aduanas' },
-  { key: 'despacho_eseer', label: 'Despacho ESEER' },
-];
+/**
+ * Subeventos detallados por cada uno de los 5 hitos del proceso.
+ * Misma fuente que TimelineHorizontal: buildHitosAwb(awb).
+ */
+const VISIBLE_INICIAL = 3;
 
-const VISIBLE_INICIAL = 2;
+export default function SubeventosColumns({ awb }) {
+  const hitos = buildHitosAwb(awb);
 
-export default function SubeventosColumns({ timeline }) {
   return (
     <div className="grid grid-cols-5 gap-2">
-      {ETAPAS.map((etapa) => {
-        const subeventos = timeline?.[etapa.key]?.subeventos || [];
-        return (
-          <Columna key={etapa.key} subeventos={subeventos} />
-        );
-      })}
+      {hitos.map((hito) => (
+        <Columna key={hito.key} subeventos={hito.subeventos} />
+      ))}
     </div>
   );
 }
@@ -27,6 +23,14 @@ function Columna({ subeventos }) {
   const [expandido, setExpandido] = useState(false);
   const visibles = expandido ? subeventos : subeventos.slice(0, VISIBLE_INICIAL);
   const hayMas = subeventos.length > VISIBLE_INICIAL;
+
+  if (subeventos.length === 0) {
+    return (
+      <div className="border border-dashed border-slate-200 rounded-md p-3 text-center text-[11px] text-slate-300 italic">
+        Sin información
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col gap-2">
@@ -96,11 +100,6 @@ function SubeventoCard({ subevento }) {
             </div>
           )}
         </div>
-        {nombre.toLowerCase().includes('dique') && (
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#0D2B6B" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M7 17l9-9M17 17V8H8" />
-          </svg>
-        )}
       </div>
     </div>
   );

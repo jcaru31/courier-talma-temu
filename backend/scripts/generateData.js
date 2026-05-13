@@ -15,13 +15,14 @@ const fs = require('fs');
 const path = require('path');
 
 const OUT = path.join(__dirname, '..', 'data', 'courier_data.json');
-const TOTAL = 250;
+const HOY = new Date('2026-05-08T12:00:00-05:00');
 
 const AEROLINEAS = [
   { code: 'LA', nombre: 'LATAM AIRLINES', short: 'LATAM' },
   { code: '5Y', nombre: 'ATLAS AIR INC.', short: 'ATLAS' },
-  { code: 'IB', nombre: 'IBERIA LINEAS AEREAS', short: 'IBERIA' },
 ];
+const ATLAS = AEROLINEAS[1];
+const LATAM = AEROLINEAS[0];
 
 const ORIGENES = [
   'PVG', 'HKG', 'CAN', 'MIA', 'JFK', 'LAX',
@@ -62,6 +63,11 @@ function awbCode() {
   return `${prefix}-${num}`;
 }
 
+function damCode() {
+  // Formato peruano simplificado: 235-2026-10-NNNNNN
+  return `235-2026-10-${pad(RND.int(100000, 999999), 6)}`;
+}
+
 function isoOffset(date) {
   const Y = date.getFullYear();
   const M = pad(date.getMonth() + 1);
@@ -78,8 +84,8 @@ function addMinutos(date, min) {
 
 function buildSubeventosRecepcion(start) {
   const t0 = start;
-  const t1 = addMinutos(t0, RND.int(20, 40));
-  const t2 = addMinutos(t1, RND.int(30, 90));
+  const t1 = addMinutos(t0, RND.int(15, 30));
+  const t2 = addMinutos(t1, RND.int(20, 60));
   return {
     estado: 'COMPLETADO',
     fecha_inicio: isoOffset(t0),
@@ -95,8 +101,8 @@ function buildSubeventosRecepcion(start) {
 
 function buildSubeventosTarja(start, bultos, diferencias = 0) {
   const t0 = start;
-  const t1 = addMinutos(t0, RND.int(60, 120));
-  const t2 = addMinutos(t1, RND.int(15, 45));
+  const t1 = addMinutos(t0, RND.int(30, 75));
+  const t2 = addMinutos(t1, RND.int(10, 30));
   const contados = bultos - diferencias;
   return {
     estado: 'COMPLETADO',
@@ -118,8 +124,8 @@ function buildSubeventosTarja(start, bultos, diferencias = 0) {
 
 function buildSubeventosAlmacen(start, kgs, canal, diasEstadia = null) {
   const t0 = start;
-  const t1 = addMinutos(t0, RND.int(60, 180));
-  const t2 = addMinutos(t1, RND.int(120, 480));
+  const t1 = addMinutos(t0, RND.int(20, 60));
+  const t2 = addMinutos(t1, RND.int(30, 75));
   return {
     estado: 'COMPLETADO',
     fecha_inicio: isoOffset(t0),
@@ -194,18 +200,112 @@ function generarAwb(i, escenario, alertasOut, vueloShared) {
 
   let bultosRecibidos = bultosEsperados;
   let kgsRecibidos = kgsEsperados;
-  let canalColor = RND.bool(0.7) ? 'VERDE' : (RND.bool(0.7) ? 'ROJO' : 'NARANJA');
-  let conLevante = canalColor === 'VERDE';
+  // Canal por defecto: VERDE con levante. Solo INMOVILIZACION pasa a ROJO sin
+  // levante (regla del cliente: inmovilizada = canal rojo y sin levante).
+  let canalColor = 'VERDE';
+  let conLevante = true;
   let canalNumero = `23526510${pad(RND.int(10000, 99999), 5)}`;
 
   let alertaIds = [];
+
+  // Caso GUIA_FALTANTE: la guia estaba en el manifiesto pero no llego al
+  // terminal. Todas las etapas pendientes; bultos y kgs recibidos = 0.
+  if (escenario === 'GUIA_FALTANTE') {
+    const alertaId = `ALR-${pad(alertasOut.length + 1, 3, '0')}`;
+    alertasOut.push({
+      id: alertaId,
+      awb_master_id: id,
+      tipo: 'GUIA_FALTANTE',
+      estado: 'ACTIVA',
+      numero_acta: `GF-2026-${pad(RND.int(1, 9999), 5)}`,
+      fecha_emision: isoOffset(addMinutos(eta, RND.int(30, 120))),
+      fecha_resolucion: null,
+      motivo: `Guia ${bultosEsperados} bultos / ${kgsEsperados} kg manifestada pero no recibida fisicamente en el terminal.`,
+      notificado: RND.bool(0.7),
+      notificacion_ids: [],
+    });
+    return {
+      id,
+      awb: awbCode(),
+      vuelo: vueloShared.vuelo,
+      manifiesto: vueloShared.manifiesto,
+      aerolinea: aero.nombre,
+      origen,
+      destino: 'LIM',
+      eta: isoOffset(eta),
+      fecha: isoOffset(eta).slice(0, 10),
+      tipo_vuelo: vueloShared.tipoVuelo,
+      tipo: 'COMERCIAL',
+      consignatario_id: 'CLI-TEMU',
+      agente_carga: agente,
+      warehouse: `300476839${pad(RND.int(10000, 99999), 5)}`,
+      tipo_almacenamiento: 'GENERAL',
+      bultos_esperados: bultosEsperados,
+      bultos_recibidos: 0,
+      kgs_esperados: kgsEsperados,
+      kgs_recibidos: 0,
+      bultos_mal_estado: 0,
+      bultos_faltantes: bultosEsperados,
+      tarja_porcentaje: 0,
+      status: 'GUIA_FALTANTE',
+      dam: null,
+      canal_dam: { numero: null, color: null, con_levante: false, agencia_aduana: agenciaAduana },
+      alertas_activas_ids: [alertaId],
+      timeline: {
+        recepcion: pendienteEtapa(),
+        tarja: pendienteEtapa(),
+        almacenamiento: pendienteEtapa(),
+        aduanas: pendienteEtapa(),
+        despacho_eseer: pendienteEtapa(),
+      },
+    };
+  }
+
+  // Caso PLANIFICADO: vuelo programado, ninguna etapa iniciada
+  if (escenario === 'PLANIFICADO') {
+    return {
+      id,
+      awb: awbCode(),
+      vuelo: vueloShared.vuelo,
+      manifiesto: vueloShared.manifiesto,
+      aerolinea: aero.nombre,
+      origen,
+      destino: 'LIM',
+      eta: isoOffset(eta),
+      fecha: isoOffset(eta).slice(0, 10),
+      tipo_vuelo: vueloShared.tipoVuelo,
+      tipo: 'COMERCIAL',
+      consignatario_id: 'CLI-TEMU',
+      agente_carga: agente,
+      warehouse: `300476839${pad(RND.int(10000, 99999), 5)}`,
+      tipo_almacenamiento: 'GENERAL',
+      bultos_esperados: bultosEsperados,
+      bultos_recibidos: 0,
+      kgs_esperados: kgsEsperados,
+      kgs_recibidos: 0,
+      bultos_mal_estado: 0,
+      bultos_faltantes: 0,
+      tarja_porcentaje: 0,
+      status: 'PLANIFICADO',
+      dam: null,
+      canal_dam: { numero: null, color: null, con_levante: false, agencia_aduana: agenciaAduana },
+      alertas_activas_ids: [],
+      timeline: {
+        recepcion: pendienteEtapa(),
+        tarja: pendienteEtapa(),
+        almacenamiento: pendienteEtapa(),
+        aduanas: pendienteEtapa(),
+        despacho_eseer: pendienteEtapa(),
+      },
+    };
+  }
 
   // Timeline
   const tRecepcion = buildSubeventosRecepcion(addMinutos(eta, RND.int(10, 30)));
   let tTarja, tAlmacen, tAduanas, tDespacho;
 
-  // Diferencias en tarja para INMOVILIZACION
-  const diferenciaBultos = escenario === 'INMOVILIZACION' ? RND.int(2, 8) : 0;
+  // Diferencias en tarja (faltan bultos en la guia): solo escenario PARCIAL.
+  const diferenciaBultos = escenario === 'PARCIAL' ? RND.int(2, 12) : 0;
   if (diferenciaBultos > 0) {
     bultosRecibidos = bultosEsperados - diferenciaBultos;
     kgsRecibidos = Number((kgsEsperados * (bultosRecibidos / bultosEsperados)).toFixed(2));
@@ -214,22 +314,22 @@ function generarAwb(i, escenario, alertasOut, vueloShared) {
   tTarja = buildSubeventosTarja(addMinutos(tRecepcion.fin, RND.int(10, 30)), bultosEsperados, diferenciaBultos);
 
   if (escenario === 'INMOVILIZACION') {
-    // Se queda en almacenamiento, sin canal
-    canalColor = 'NARANJA';
+    // Inmovilizada por aduanas: canal ROJO sin levante. Llega completa,
+    // pasa almacenamiento, transmite, pero SUNAT no otorga levante.
+    canalColor = 'ROJO';
     conLevante = false;
-    canalNumero = null;
-    tAlmacen = {
+    tAlmacen = buildSubeventosAlmacen(addMinutos(tTarja.fin, RND.int(5, 20)), kgsRecibidos, canalColor);
+    const aduanasStart = addMinutos(tAlmacen.fin, RND.int(10, 30));
+    tAduanas = {
       estado: 'EN_CURSO',
-      fecha_inicio: isoOffset(addMinutos(tTarja.fin, RND.int(5, 20))),
+      fecha_inicio: isoOffset(aduanasStart),
       fecha_fin: null,
-      dias_estadia: RND.int(0, 2),
       subeventos: [
-        { nombre: 'Estadia de carga', fecha: isoOffset(addMinutos(tTarja.fin, 10)), estado: 'COMPLETADO' },
-        { nombre: 'Pesado', fecha: isoOffset(addMinutos(tTarja.fin, 60)), estado: 'COMPLETADO', detalle: { kgs: kgsRecibidos } },
-        { nombre: 'Asignacion de canal', fecha: null, estado: 'PENDIENTE' },
+        { nombre: 'Transmision manifiesto', fecha: isoOffset(aduanasStart), estado: 'COMPLETADO' },
+        { nombre: 'Emision volante', fecha: null, estado: 'PENDIENTE' },
+        { nombre: 'Inmovilizacion canal rojo sin levante', fecha: isoOffset(addMinutos(aduanasStart, RND.int(60, 240))), estado: 'ACTIVA' },
       ],
     };
-    tAduanas = pendienteEtapa();
     tDespacho = pendienteEtapa();
 
     const alertaId = `ALR-${pad(alertasOut.length + 1, 3, '0')}`;
@@ -240,16 +340,22 @@ function generarAwb(i, escenario, alertasOut, vueloShared) {
       tipo: 'INMOVILIZACION',
       estado: 'ACTIVA',
       numero_acta: `INM-2026-${pad(RND.int(1, 9999), 5)}`,
-      fecha_emision: isoOffset(addMinutos(tTarja.fin, 5)),
+      fecha_emision: isoOffset(addMinutos(aduanasStart, 60)),
       fecha_resolucion: null,
-      motivo: `Diferencia de ${diferenciaBultos} bultos entre manifiesto (${bultosEsperados}) y carga fisica recibida (${bultosRecibidos}). Inmovilizacion preventiva hasta esclarecimiento.`,
+      motivo: 'Canal rojo asignado por aduanas. SUNAT no ha otorgado levante: la carga permanece inmovilizada en almacen hasta verificacion documental y fisica.',
       notificado: RND.bool(0.6),
       notificacion_ids: [],
     });
-
-    // Marcar el subevento de diferencias con el alerta_id
-    const diff = tTarja.subeventos.find((s) => s.nombre === 'Diferencias detectadas');
-    if (diff && diff.detalle) diff.detalle.alerta_id = alertaId;
+  } else if (escenario === 'PARCIAL') {
+    // Faltan bultos en la guia: pasa todo el proceso con la cantidad recibida.
+    tAlmacen = buildSubeventosAlmacen(addMinutos(tTarja.fin, RND.int(5, 20)), kgsRecibidos, canalColor);
+    tAduanas = buildSubeventosAduanas(addMinutos(tAlmacen.fin, RND.int(10, 30)));
+    tDespacho = {
+      ...buildSubeventosDespacho(addMinutos(tAduanas.fin, RND.int(10, 30))),
+      estado: 'EN_CURSO',
+      fecha_fin: null,
+    };
+    tDespacho.subeventos.pop();
   } else if (escenario === 'MAL_ESTADO') {
     // Pasa la tarja con todos los bultos pero llega un reporte de carga danada
     tAlmacen = buildSubeventosAlmacen(addMinutos(tTarja.fin, RND.int(5, 20)), kgsRecibidos, canalColor);
@@ -358,10 +464,18 @@ function generarAwb(i, escenario, alertasOut, vueloShared) {
       ? 'TARJADO'
       : 'EN_PROCESO';
 
+  // bultos_mal_estado: solo en escenario MAL_ESTADO.
+  const bultosMalEstado = escenario === 'MAL_ESTADO' ? RND.int(1, Math.max(2, Math.floor(bultosRecibidos * 0.05))) : 0;
+  // bultos_faltantes: diferencia entre manifestado y recibido (solo > 0 en PARCIAL).
+  const bultosFaltantes = Math.max(0, bultosEsperados - bultosRecibidos);
+
+  // DAM: se asigna desde almacenamiento en adelante (todos los escenarios actuales
+  // de esta rama llegaron a almacenamiento, incluido INMOVILIZACION).
+  const damAsignada = true;
+
   return {
     id,
     awb: awbCode(),
-    hawb: RND.bool(0.4) ? `0${pad(RND.int(1, 9), 1)}HX${pad(RND.int(10000000, 99999999), 8)}` : null,
     vuelo: vueloShared.vuelo,
     manifiesto: vueloShared.manifiesto,
     aerolinea: aero.nombre,
@@ -379,8 +493,11 @@ function generarAwb(i, escenario, alertasOut, vueloShared) {
     bultos_recibidos: bultosRecibidos,
     kgs_esperados: kgsEsperados,
     kgs_recibidos: kgsRecibidos,
+    bultos_mal_estado: bultosMalEstado,
+    bultos_faltantes: bultosFaltantes,
     tarja_porcentaje: bultosEsperados > 0 ? Math.round((bultosRecibidos / bultosEsperados) * 100) : 0,
     status,
+    dam: damAsignada ? damCode() : null,
     canal_dam: {
       numero: canalNumero,
       color: canalColor,
@@ -403,56 +520,78 @@ function stripFin(etapa) {
   return rest;
 }
 
-function escenarioPara(i) {
+function escenarioParaVuelo(vuelo) {
+  if (vuelo.escenarioVuelo === 'PLANIFICADO') return 'PLANIFICADO';
+  if (vuelo.escenarioVuelo === 'EN_PROCESO_HOY') {
+    const r = Math.random();
+    if (r < 0.30) return 'EN_PROCESO';
+    if (r < 0.48) return 'DESPACHADO_A_ESEER';
+    if (r < 0.62) return 'PARCIAL';
+    if (r < 0.76) return 'INMOVILIZACION';
+    if (r < 0.90) return 'MAL_ESTADO';
+    return 'GUIA_FALTANTE';
+  }
+  if (vuelo.escenarioVuelo === 'AYER_MIX') {
+    const r = Math.random();
+    if (r < 0.60) return 'DESPACHADO_A_ESEER';
+    if (r < 0.70) return 'EN_PROCESO';
+    if (r < 0.79) return 'PARCIAL';
+    if (r < 0.87) return 'INMOVILIZACION';
+    if (r < 0.95) return 'MAL_ESTADO';
+    return 'GUIA_FALTANTE';
+  }
+  // Pasados antiguos: mayoria despachados, con algunas alertas residuales
   const r = Math.random();
-  if (r < 0.6) return 'DESPACHADO_A_ESEER';
-  if (r < 0.78) return 'EN_PROCESO';
-  if (r < 0.88) return 'ACE';
-  if (r < 0.95) return 'INMOVILIZACION';
-  return 'MAL_ESTADO';
+  if (r < 0.80) return 'DESPACHADO_A_ESEER';
+  if (r < 0.86) return 'PARCIAL';
+  if (r < 0.93) return 'INMOVILIZACION';
+  if (r < 0.97) return 'MAL_ESTADO';
+  return 'GUIA_FALTANTE';
 }
 
-function generarVuelos(targetTotalAwbs) {
-  const vuelos = [];
-  const hoy = new Date('2026-05-08T12:00:00-05:00');
-  let awbsAcumulados = 0;
-  let vueloIdx = 0;
+/**
+ * 10 vuelos fijos: 1 mañana (planificado), 1 hoy (en proceso), 8 pasados.
+ * 3 LATAM en dias alternos (hace 2, 4 y 6 dias) — el resto ATLAS.
+ */
+function generarVuelos10() {
+  const PLAN = [
+    { diaOffset:  1, aero: ATLAS, hora: [10, 30], esc: 'PLANIFICADO',   origen: 'MIA' },
+    { diaOffset:  0, aero: ATLAS, hora: [ 4, 15], esc: 'EN_PROCESO_HOY', origen: 'MIA' },
+    { diaOffset: -1, aero: ATLAS, hora: [ 5,  0], esc: 'AYER_MIX',        origen: 'JFK' },
+    { diaOffset: -2, aero: LATAM, hora: [22, 40], esc: null,             origen: 'PVG' },
+    { diaOffset: -3, aero: ATLAS, hora: [ 3, 20], esc: null,             origen: 'MIA' },
+    { diaOffset: -4, aero: LATAM, hora: [22, 15], esc: null,             origen: 'HKG' },
+    { diaOffset: -5, aero: ATLAS, hora: [ 4, 45], esc: null,             origen: 'LAX' },
+    { diaOffset: -6, aero: LATAM, hora: [22,  0], esc: null,             origen: 'PVG' },
+    { diaOffset: -7, aero: ATLAS, hora: [ 3, 50], esc: null,             origen: 'MIA' },
+    { diaOffset: -8, aero: ATLAS, hora: [ 5, 20], esc: null,             origen: 'JFK' },
+  ];
 
-  while (awbsAcumulados < targetTotalAwbs) {
-    const aero = RND.pick(AEROLINEAS);
-    const diasAtras = RND.int(0, 7);
-    const eta = new Date(hoy.getTime() - diasAtras * 24 * 60 * 60 * 1000);
-    eta.setHours(RND.int(0, 23), RND.int(0, 59), RND.int(0, 59));
-
-    const cantidadAwbs = RND.int(5, 15);
-    const restantes = targetTotalAwbs - awbsAcumulados;
-    const finalCantidad = Math.min(cantidadAwbs, restantes);
-
-    vuelos.push({
-      aero,
-      vuelo: `${aero.code} ${pad(RND.int(100, 9999), 4)}`,
-      manifiesto: `2026-${pad(RND.int(10000, 99999), 5)}`,
-      origen: RND.pick(ORIGENES),
+  return PLAN.map((p, i) => {
+    const eta = new Date(HOY.getTime() + p.diaOffset * 24 * 60 * 60 * 1000);
+    eta.setHours(p.hora[0], p.hora[1], 0, 0);
+    return {
+      aero: p.aero,
+      vuelo: `${p.aero.code} ${pad(RND.int(100, 9999), 4)}`,
+      manifiesto: `2026-${pad(20100 + i * 7, 5)}`,
+      origen: p.origen,
       eta,
-      tipoVuelo: RND.bool(0.7) ? 'PAX' : 'CAO',
-      cantidadAwbs: finalCantidad,
-    });
-    awbsAcumulados += finalCantidad;
-    vueloIdx++;
-  }
-
-  return vuelos;
+      tipoVuelo: p.aero.code === '5Y' ? 'CAO' : RND.pick(['PAX', 'CAO']),
+      cantidadAwbs: RND.int(8, 14),
+      escenarioVuelo: p.esc,
+    };
+  });
 }
 
 function main() {
   const awbs = [];
   const alertas = [];
 
-  const vuelos = generarVuelos(TOTAL);
+  const vuelos = generarVuelos10();
   let i = 1;
   for (const v of vuelos) {
     for (let j = 0; j < v.cantidadAwbs; j++) {
-      awbs.push(generarAwb(i, escenarioPara(i), alertas, v));
+      awbs.push(generarAwb(i, escenarioParaVuelo(v), alertas, v));
       i++;
     }
   }
