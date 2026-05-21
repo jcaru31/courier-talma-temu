@@ -38,6 +38,34 @@ const AGENTES = [
   'CARGO MASTER E.I.R.L.',
 ];
 
+// Shipper: embarcador en origen que figura en la guia aerea.
+const SHIPPERS = [
+  'WHALECO INC.',
+  'TEMU FULFILLMENT CENTER - GUANGZHOU',
+  'PDD EXPORT LOGISTICS CO. LTD',
+  'SHENZHEN GLOBAL FORWARDING CO.',
+  'YIWU INTERNATIONAL CARGO LTD',
+  'HANGZHOU CROSS-BORDER SUPPLY CO.',
+];
+
+// Capitanes para el manifiesto de carga.
+const CAPITANES = [
+  'Watson Christopher Gerard',
+  'Müller Andreas Klaus',
+  'Chen Wei Lung',
+  'Rodríguez Fernández Carlos',
+  'Smith Jonathan Edward',
+  'Tanaka Hiroshi Kenji',
+];
+
+// Prefijo de pais (ISO) por aeropuerto de origen, para el puerto de zarpe.
+const PAIS_POR_ORIGEN = {
+  MIA: 'US', JFK: 'US', LAX: 'US',
+  MAD: 'ES', AMS: 'NL', CDG: 'FR',
+  PVG: 'CN', HKG: 'HK', CAN: 'CN',
+  GRU: 'BR', NRT: 'JP', ICN: 'KR',
+};
+
 const AGENCIAS_ADUANA = [
   'AGENCIA AFIANZADA DE ADUANA J. K.M. S.A.C.',
   'TLI ADUANAS S.A.C.',
@@ -64,8 +92,9 @@ function awbCode() {
 }
 
 function damCode() {
-  // Formato peruano simplificado: 235-2026-10-NNNNNN
-  return `235-2026-10-${pad(RND.int(100000, 999999), 6)}`;
+  // Formato Documento de Salida (master): 235-26-S6N-NNNNNN-NN-NNN
+  const letra = String.fromCharCode(65 + RND.int(0, 25));
+  return `235-26-S6${letra}-${pad(RND.int(1, 999999), 6)}-${pad(RND.int(1, 99))}-${pad(RND.int(1, 999), 3)}`;
 }
 
 function isoOffset(date) {
@@ -141,44 +170,48 @@ function buildSubeventosAlmacen(start, kgs, canal, diasEstadia = null) {
 }
 
 function buildSubeventosAduanas(start) {
-  const t0 = start;
-  const t1 = addMinutos(t0, RND.int(60, 240));
-  return {
-    estado: 'COMPLETADO',
-    fecha_inicio: isoOffset(t0),
-    fecha_fin: isoOffset(t1),
-    subeventos: [
-      { nombre: 'Transmision manifiesto', fecha: isoOffset(t0), estado: 'COMPLETADO' },
-      {
-        nombre: 'Emision volante',
-        fecha: isoOffset(t1),
-        estado: 'COMPLETADO',
-        detalle: { volante: `VOL-2026-${pad(RND.int(1, 9999), 4)}` },
-      },
-    ],
-    fin: t1,
-  };
-}
-
-function buildSubeventosDespacho(start) {
-  const t0 = start;
-  const t1 = addMinutos(t0, RND.int(120, 360));
-  const t2 = addMinutos(t1, RND.int(30, 90));
+  // Orden cronológico real: primero se transmite la descarga de la mercancía;
+  // ~1 minuto después se emite el volante, y el aviso de llegada comparte la
+  // hora del volante.
+  const t0 = start;                              // Transmisión de descarga
+  const t1 = addMinutos(t0, RND.int(1, 2));      // Emisión de volante (~1 min)
+  const t2 = t1;                                 // Aviso de llegada (misma hora)
   return {
     estado: 'COMPLETADO',
     fecha_inicio: isoOffset(t0),
     fecha_fin: isoOffset(t2),
     subeventos: [
-      { nombre: 'Facturacion', fecha: isoOffset(t0), estado: 'COMPLETADO' },
+      { nombre: 'Transmision de descarga de mercancia', fecha: isoOffset(t0), estado: 'COMPLETADO' },
+      { nombre: 'Emision de volante', fecha: isoOffset(t1), estado: 'COMPLETADO' },
+      { nombre: 'Aviso de llegada', fecha: isoOffset(t2), estado: 'COMPLETADO' },
+    ],
+    fin: t2,
+  };
+}
+
+function buildSubeventosDespacho(start) {
+  const t0 = start;
+  const t1 = addMinutos(t0, RND.int(15, 45));
+  const t2 = addMinutos(t1, RND.int(40, 120));
+  const t3 = addMinutos(t2, RND.int(15, 45));
+  const t4 = addMinutos(t3, RND.int(20, 60));
+  return {
+    estado: 'COMPLETADO',
+    fecha_inicio: isoOffset(t0),
+    fecha_fin: isoOffset(t4),
+    subeventos: [
+      { nombre: 'Facturacion handling', fecha: isoOffset(t0), estado: 'COMPLETADO' },
+      { nombre: 'Facturacion traslado postal', fecha: isoOffset(t1), estado: 'COMPLETADO' },
       {
-        nombre: 'Ingreso de unidad',
-        fecha: isoOffset(t1),
+        nombre: 'Ingreso de transportista',
+        fecha: isoOffset(t2),
         estado: 'COMPLETADO',
         detalle: { placa: `${String.fromCharCode(65 + RND.int(0, 25))}${String.fromCharCode(65 + RND.int(0, 25))}${String.fromCharCode(65 + RND.int(0, 25))}-${pad(RND.int(100, 999), 3)}` },
       },
-      { nombre: 'Despacho confirmado', fecha: isoOffset(t2), estado: 'COMPLETADO' },
+      { nombre: 'Inicio de estiba', fecha: isoOffset(t3), estado: 'COMPLETADO' },
+      { nombre: 'Entrega de carga', fecha: isoOffset(t4), estado: 'COMPLETADO' },
     ],
-    fin: t2,
+    fin: t4,
   };
 }
 
@@ -191,9 +224,13 @@ function generarAwb(i, escenario, alertasOut, vueloShared) {
   const aero = vueloShared.aero;
   const origen = vueloShared.origen;
   const agente = RND.pick(AGENTES);
+  const shipper = RND.pick(SHIPPERS);
   const agenciaAduana = RND.pick(AGENCIAS_ADUANA);
 
   const eta = new Date(vueloShared.eta);
+  // Fecha de emision de la guia aerea: entre 1 y 5 dias antes del ETA del vuelo
+  // (cuando el shipper emite el AWB en origen).
+  const fechaEmision = addMinutos(eta, -RND.int(24 * 60, 120 * 60));
 
   const bultosEsperados = RND.int(20, 250);
   const kgsEsperados = RND.float(150, 3500, 2);
@@ -233,13 +270,20 @@ function generarAwb(i, escenario, alertasOut, vueloShared) {
       origen,
       destino: 'LIM',
       eta: isoOffset(eta),
+      fecha_salida_origen: isoOffset(new Date(vueloShared.fechaSalidaOrigen)),
+      matricula: vueloShared.matricula,
       fecha: isoOffset(eta).slice(0, 10),
       tipo_vuelo: vueloShared.tipoVuelo,
       tipo: 'COMERCIAL',
       consignatario_id: 'CLI-TEMU',
       agente_carga: agente,
       warehouse: `300476839${pad(RND.int(10000, 99999), 5)}`,
-      tipo_almacenamiento: 'GENERAL',
+      tipo_almacenamiento: 'COURIER BAGS',
+      shipper,
+      fecha_emision: isoOffset(fechaEmision),
+      manifiesto_carga: vueloShared.manifiestoCarga,
+      volante: null,
+      handling_pagado: true,
       bultos_esperados: bultosEsperados,
       bultos_recibidos: 0,
       kgs_esperados: kgsEsperados,
@@ -272,13 +316,20 @@ function generarAwb(i, escenario, alertasOut, vueloShared) {
       origen,
       destino: 'LIM',
       eta: isoOffset(eta),
+      fecha_salida_origen: isoOffset(new Date(vueloShared.fechaSalidaOrigen)),
+      matricula: vueloShared.matricula,
       fecha: isoOffset(eta).slice(0, 10),
       tipo_vuelo: vueloShared.tipoVuelo,
       tipo: 'COMERCIAL',
       consignatario_id: 'CLI-TEMU',
       agente_carga: agente,
       warehouse: `300476839${pad(RND.int(10000, 99999), 5)}`,
-      tipo_almacenamiento: 'GENERAL',
+      tipo_almacenamiento: 'COURIER BAGS',
+      shipper,
+      fecha_emision: isoOffset(fechaEmision),
+      manifiesto_carga: vueloShared.manifiestoCarga,
+      volante: null,
+      handling_pagado: true,
       bultos_esperados: bultosEsperados,
       bultos_recibidos: 0,
       kgs_esperados: kgsEsperados,
@@ -440,9 +491,12 @@ function generarAwb(i, escenario, alertasOut, vueloShared) {
       tAduanas = pendienteEtapa();
       tDespacho = pendienteEtapa();
     } else if (avance === 2) {
+      // En trasmisión almacén: la descarga ya se transmitió, pero el volante
+      // (y por ende el aviso de llegada) aún están pendientes.
       tAlmacen = buildSubeventosAlmacen(addMinutos(tTarja.fin, 10), kgsRecibidos, canalColor);
       tAduanas = { ...buildSubeventosAduanas(addMinutos(tAlmacen.fin, 10)), estado: 'EN_CURSO', fecha_fin: null };
-      tAduanas.subeventos[1] = { nombre: 'Emision volante', fecha: null, estado: 'PENDIENTE' };
+      tAduanas.subeventos[1] = { nombre: 'Emision de volante', fecha: null, estado: 'PENDIENTE' };
+      tAduanas.subeventos[2] = { nombre: 'Aviso de llegada', fecha: null, estado: 'PENDIENTE' };
       tDespacho = pendienteEtapa();
     } else {
       tAlmacen = buildSubeventosAlmacen(addMinutos(tTarja.fin, 10), kgsRecibidos, canalColor);
@@ -473,6 +527,18 @@ function generarAwb(i, escenario, alertasOut, vueloShared) {
   // de esta rama llegaron a almacenamiento, incluido INMOVILIZACION).
   const damAsignada = true;
 
+  // handling_pagado: las guias despachadas pagaron handling; las que siguen en
+  // proceso pueden no haberlo pagado (gatilla la alerta de handling).
+  const handlingPagado = escenario === 'DESPACHADO_A_ESEER' ? true : RND.bool(0.7);
+
+  // volante: se emite en el hito de transmisiones (subevento "Emision de volante").
+  // Si la guia aun no llego a ese punto no tiene volante: queda bloqueada
+  // documentariamente hasta que la aerolinea/aduanas lo emita.
+  const volanteEmitido = (tAduanas.subeventos || []).some(
+    (s) => /volante/i.test(s.nombre) && s.estado === 'COMPLETADO'
+  );
+  const volante = volanteEmitido ? `VOL-2026-${pad(RND.int(1, 99999), 5)}` : null;
+
   return {
     id,
     awb: awbCode(),
@@ -482,13 +548,20 @@ function generarAwb(i, escenario, alertasOut, vueloShared) {
     origen,
     destino: 'LIM',
     eta: isoOffset(eta),
+    fecha_salida_origen: isoOffset(new Date(vueloShared.fechaSalidaOrigen)),
+    matricula: vueloShared.matricula,
     fecha: isoOffset(eta).slice(0, 10),
     tipo_vuelo: vueloShared.tipoVuelo,
     tipo: 'COMERCIAL',
     consignatario_id: 'CLI-TEMU',
     agente_carga: agente,
     warehouse: `300476839${pad(RND.int(10000, 99999), 5)}`,
-    tipo_almacenamiento: 'GENERAL',
+    tipo_almacenamiento: 'COURIER BAGS',
+    shipper,
+    fecha_emision: isoOffset(fechaEmision),
+    manifiesto_carga: vueloShared.manifiestoCarga,
+    volante,
+    handling_pagado: handlingPagado,
     bultos_esperados: bultosEsperados,
     bultos_recibidos: bultosRecibidos,
     kgs_esperados: kgsEsperados,
@@ -549,13 +622,34 @@ function escenarioParaVuelo(vuelo) {
   return 'GUIA_FALTANTE';
 }
 
+// Duracion aproximada de vuelo hacia LIM por aeropuerto de origen (horas).
+const DURACION_VUELO_H = {
+  MIA: 6, JFK: 8, LAX: 8.5, GRU: 5,
+  MAD: 12, AMS: 14, CDG: 13,
+  PVG: 26, HKG: 25, CAN: 26, NRT: 22, ICN: 23,
+};
+
+// Matricula de aeronave segun aerolinea: ATLAS (EE.UU., prefijo N), LATAM (Chile, CC-).
+function matriculaAvion(aeroCode) {
+  if (aeroCode === '5Y') {
+    const l1 = String.fromCharCode(65 + RND.int(0, 25));
+    const l2 = String.fromCharCode(65 + RND.int(0, 25));
+    return `N${pad(RND.int(100, 999), 3)}${l1}${l2}`;
+  }
+  const l1 = String.fromCharCode(65 + RND.int(0, 25));
+  const l2 = String.fromCharCode(65 + RND.int(0, 25));
+  return `CC-B${l1}${l2}`;
+}
+
 /**
- * 10 vuelos fijos: 1 mañana (planificado), 1 hoy (en proceso), 8 pasados.
- * 3 LATAM en dias alternos (hace 2, 4 y 6 dias) — el resto ATLAS.
+ * 10 vuelos fijos: 1 en vuelo (llega hoy en la tarde), 1 hoy ya en proceso,
+ * 8 pasados. 3 LATAM en dias alternos — el resto ATLAS.
+ * El primer vuelo se programa para que el cronometro de demo (08:45) lo
+ * capture a mitad de ruta y se vea el tracker de posicion.
  */
 function generarVuelos10() {
   const PLAN = [
-    { diaOffset:  1, aero: ATLAS, hora: [10, 30], esc: 'PLANIFICADO',   origen: 'MIA' },
+    { diaOffset:  0, aero: ATLAS, hora: [14, 45], esc: 'PLANIFICADO',   origen: 'MAD' },
     { diaOffset:  0, aero: ATLAS, hora: [ 4, 15], esc: 'EN_PROCESO_HOY', origen: 'MIA' },
     { diaOffset: -1, aero: ATLAS, hora: [ 5,  0], esc: 'AYER_MIX',        origen: 'JFK' },
     { diaOffset: -2, aero: LATAM, hora: [22, 40], esc: null,             origen: 'PVG' },
@@ -570,12 +664,40 @@ function generarVuelos10() {
   return PLAN.map((p, i) => {
     const eta = new Date(HOY.getTime() + p.diaOffset * 24 * 60 * 60 * 1000);
     eta.setHours(p.hora[0], p.hora[1], 0, 0);
+    const duracionH = DURACION_VUELO_H[p.origen] || 8;
+    const fechaSalidaOrigen = new Date(eta.getTime() - duracionH * 60 * 60 * 1000);
+    // Hito Aerolinea: la numeracion del manifiesto y la incorporacion de guias
+    // ocurren antes del vuelo. Numeracion primero, luego incorporacion.
+    const fechaNumeracion = new Date(eta.getTime() - RND.int(4, 7) * 24 * 60 * 60 * 1000);
+    const fechaIncorporacion = new Date(eta.getTime() - RND.int(1, 3) * 24 * 60 * 60 * 1000);
+    const numeroVuelo = `${p.aero.code} ${pad(RND.int(100, 9999), 4)}`;
+    const matricula = matriculaAvion(p.aero.code);
+    const manifiestoCarga = {
+      numero_manifiesto: `2026-${pad(20100 + i * 7, 5)}`,
+      codigo_transportista: p.aero.code,
+      capitan: RND.pick(CAPITANES),
+      identidad_capitan: `PAS-${pad(RND.int(100000, 999999), 6)}`,
+      matricula,
+      tipo_medio_transporte: `${pad(RND.int(100, 999), 3)}Y`,
+      puerto_zarpe: `${PAIS_POR_ORIGEN[p.origen] || 'XX'}${p.origen}`,
+      tipo_lugar_descarga: '88',
+      lugar_descarga: '3507',
+      puerto_intermedio: null,
+      fecha_zarpe: isoOffset(fechaSalidaOrigen),
+      fecha_zarpe_intermedio: null,
+      fecha_estimada_llegada: isoOffset(eta),
+      fecha_numeracion: isoOffset(fechaNumeracion),
+      fecha_incorporacion_guias: isoOffset(fechaIncorporacion),
+    };
     return {
       aero: p.aero,
-      vuelo: `${p.aero.code} ${pad(RND.int(100, 9999), 4)}`,
+      vuelo: numeroVuelo,
       manifiesto: `2026-${pad(20100 + i * 7, 5)}`,
       origen: p.origen,
       eta,
+      fechaSalidaOrigen,
+      matricula,
+      manifiestoCarga,
       tipoVuelo: p.aero.code === '5Y' ? 'CAO' : RND.pick(['PAX', 'CAO']),
       cantidadAwbs: RND.int(8, 14),
       escenarioVuelo: p.esc,

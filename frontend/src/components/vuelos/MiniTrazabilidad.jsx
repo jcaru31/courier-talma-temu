@@ -17,13 +17,17 @@ const ETAPA_A_TRACKING = {
   despacho: 'DESPACHADO',
 };
 
-export default function MiniTrazabilidad({ trazabilidad, etapaActiva = null, onEtapaClick = () => {} }) {
+export default function MiniTrazabilidad({
+  trazabilidad,
+  etapaActiva = null,
+  onEtapaClick = () => {},
+}) {
   if (!trazabilidad || trazabilidad.length === 0) return null;
   const cols = trazabilidad.length;
 
   return (
     <div>
-      <div className="text-[10px] uppercase tracking-wider text-muted font-semibold mb-3">
+      <div className="mb-3 text-[10px] uppercase tracking-wider text-muted font-semibold">
         Trazabilidad de proceso
       </div>
       <div className="grid" style={{ gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` }}>
@@ -45,18 +49,25 @@ export default function MiniTrazabilidad({ trazabilidad, etapaActiva = null, onE
           const leftLine = prevPct === 1 && pct === 1 ? 'bg-ok' : 'bg-slate-200';
           const rightLine = pct === 1 && nextPct === 1 ? 'bg-ok' : 'bg-slate-200';
 
-          const activa = etapaActiva === etapa.key;
-          const handleClick = () => onEtapaClick(activa ? null : etapa.key);
+          // El hito Aerolínea no es filtrable: toda guía registrada ya está
+          // manifestada, así que no aporta como filtro de la tabla.
+          const clickeable = etapa.key !== 'aerolinea';
+          const activa = clickeable && etapaActiva === etapa.key;
+          const handleClick = () => clickeable && onEtapaClick(activa ? null : etapa.key);
 
+          const Comp = clickeable ? 'button' : 'div';
           return (
-            <button
+            <Comp
               key={etapa.key}
-              type="button"
-              onClick={handleClick}
+              {...(clickeable ? { type: 'button', onClick: handleClick } : {})}
               className={`flex flex-col items-center text-center px-1 py-1 rounded-md transition ${
-                activa ? 'bg-blue-50 ring-2 ring-navy' : 'hover:bg-slate-50'
+                activa
+                  ? 'bg-blue-50 ring-2 ring-navy'
+                  : clickeable
+                  ? 'hover:bg-slate-50 cursor-pointer'
+                  : 'cursor-default'
               }`}
-              title={`Filtrar guías en ${etapa.label}`}
+              title={clickeable ? `Filtrar guías en ${etapa.label}` : 'Todas las guías del vuelo ya están manifestadas'}
             >
               <div className={`p-1.5 rounded-full ${completa || parcial ? 'bg-blue-50' : ''}`}>
                 <EtapaIcono etapa={etapa.key} activo={completa || parcial} size={26} />
@@ -76,7 +87,7 @@ export default function MiniTrazabilidad({ trazabilidad, etapaActiva = null, onE
                 {!isLast && <div className={`absolute right-0 top-1/2 -translate-y-1/2 w-1/2 h-[3px] ${rightLine}`} />}
                 <Circle estado={completa ? 'OK' : parcial ? 'PARCIAL' : 'VACIO'} />
               </div>
-            </button>
+            </Comp>
           );
         })}
       </div>

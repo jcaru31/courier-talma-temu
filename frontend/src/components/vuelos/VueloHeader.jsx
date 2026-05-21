@@ -1,10 +1,11 @@
 import MiniTrazabilidad from './MiniTrazabilidad.jsx';
-import RelojSLA from './RelojSLA.jsx';
+import { IconoAlerta } from './alertaIconos.jsx';
 
 /**
- * Header del vuelo compacto. Columna izquierda con info + reloj META.
+ * Header del vuelo compacto. Columna izquierda con info del vuelo.
  * Columna derecha apila: trazabilidad (top) + chips de alertas (bottom),
  * todo dentro del mismo bloque para no dejar espacios en blanco.
+ * NOTA: META oculta por decision del cliente (TEMU) — ver memoria del proyecto.
  */
 export default function VueloHeader({
   vuelo,
@@ -12,6 +13,7 @@ export default function VueloHeader({
   onEtapaClick = () => {},
   alertaActiva = null,
   onAlertaClick = () => {},
+  onAbrirManifiesto = () => {},
 }) {
   const hayFiltro = etapaActiva || alertaActiva;
   return (
@@ -26,21 +28,28 @@ export default function VueloHeader({
             <div className="text-[12px] font-semibold text-slate-700 uppercase tracking-wider">
               {vuelo.aerolinea_short || vuelo.aerolinea}
             </div>
-            <div className="text-[11px] text-muted ml-auto font-medium">
+            <button
+              onClick={onAbrirManifiesto}
+              className="ml-auto inline-flex items-center gap-1.5 text-[11px] font-semibold text-navy bg-blue-50 border border-navy/30 rounded-md px-2.5 py-1 hover:bg-blue-100 transition"
+              title="Ver numeración del manifiesto de carga"
+            >
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="6" y="4" width="12" height="17" rx="2" />
+                <path d="M9 4V3a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v1" />
+                <path d="M9 11h6M9 15h4" />
+              </svg>
               MNF {vuelo.manifiesto}
-            </div>
+            </button>
           </div>
 
-          <div className="grid grid-cols-6 gap-x-3 gap-y-2 pt-0.5">
+          <div className="grid grid-cols-3 gap-x-3 gap-y-3 pt-0.5">
             <Cell label="Origen" value={vuelo.origen} big />
             <Cell label="Destino" value={vuelo.destino} big />
             <Cell label="Arribo" value={formatFechaHora(vuelo.eta)} />
-            <Cell label="ULD" value={`${vuelo.uld_recibidos}/${vuelo.uld_esperados}`} />
-            <Cell label="Bultos" value={`${vuelo.bultos_recibidos}/${vuelo.bultos_esperados}`} />
-            <Cell label="Kilos" value={formatKg(vuelo.kgs_recibidos)} />
+            <CellRatio label="Bultos" rec={vuelo.bultos_recibidos} man={vuelo.bultos_esperados} />
+            <CellRatio label="Kilos" rec={formatKg(vuelo.kgs_recibidos)} man={formatKg(vuelo.kgs_esperados)} />
+            <Cell label="Guías" value={vuelo.total_awbs} />
           </div>
-
-          <RelojSLA sla={vuelo.sla} />
         </div>
 
         {/* Columna derecha: trazabilidad + alertas apilados */}
@@ -113,25 +122,37 @@ function Cell({ label, value, big = false }) {
   );
 }
 
+/** Celda con ratio recibido / manifestado (bultos, kilos). */
+function CellRatio({ label, rec, man }) {
+  return (
+    <div className="flex flex-col leading-tight">
+      <span className="text-[10px] uppercase tracking-wider text-muted font-semibold">
+        {label} <span className="text-slate-400 normal-case font-medium">rec / man</span>
+      </span>
+      <span className="text-sm font-bold text-slate-900 mt-0.5 tracking-tight tabular-nums">
+        {rec ?? '—'}
+        <span className="text-slate-400 font-medium"> / {man ?? '—'}</span>
+      </span>
+    </div>
+  );
+}
+
+// Chip de alerta compacto "gerencial": icono + número en el color de la alerta.
+// El nombre y la acción de filtro van en el tooltip (sin etiqueta de texto).
 function AlertChip({ tipo, label, value, accent, activa, onClick }) {
   const hayValor = value > 0;
+  const TEXT = {
+    violet: 'text-violet-700',
+    amber: 'text-amber-700',
+    orange: 'text-orange-600',
+    red: 'text-danger',
+  };
   const ACTIVE = {
-    violet: 'border-violet-300 bg-violet-50 text-violet-800',
-    amber: 'border-amber-300 bg-amber-50 text-amber-800',
-    orange: 'border-orange-300 bg-orange-50 text-orange-700',
-    red: 'border-red-300 bg-red-50 text-danger',
+    violet: 'bg-violet-50 ring-violet-500',
+    amber: 'bg-amber-50 ring-amber-500',
+    orange: 'bg-orange-50 ring-orange-500',
+    red: 'bg-red-50 ring-red-500',
   };
-  const INACTIVE = 'border-slate-200 bg-slate-50 text-slate-300';
-  const RING = {
-    violet: 'ring-2 ring-violet-500',
-    amber: 'ring-2 ring-amber-500',
-    orange: 'ring-2 ring-orange-500',
-    red: 'ring-2 ring-red-500',
-  };
-
-  const base = `inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1 leading-none ${
-    hayValor ? ACTIVE[accent] : INACTIVE
-  } ${activa ? RING[accent] + ' shadow-sm' : ''}`;
 
   const handle = () => { if (hayValor) onClick(activa ? null : tipo); };
 
@@ -140,11 +161,15 @@ function AlertChip({ tipo, label, value, accent, activa, onClick }) {
       type="button"
       onClick={handle}
       disabled={!hayValor}
-      className={`${base} ${hayValor ? 'hover:shadow cursor-pointer' : 'cursor-not-allowed'}`}
-      title={hayValor ? `Filtrar guías: ${label}` : `${label}: 0`}
+      className={`inline-flex items-center gap-1.5 rounded-md px-2 py-1 leading-none transition ${
+        hayValor ? TEXT[accent] : 'text-slate-300'
+      } ${activa ? 'ring-2 ' + ACTIVE[accent] : hayValor ? 'hover:bg-slate-100' : ''} ${
+        hayValor ? 'cursor-pointer' : 'cursor-not-allowed'
+      }`}
+      title={hayValor ? `${label}: ${value} — clic para filtrar guías` : `${label}: 0`}
     >
+      <IconoAlerta tipo={tipo} size={15} />
       <span className="text-sm font-bold tabular-nums">{value}</span>
-      <span className="text-[10px] uppercase tracking-wider font-semibold">{label}</span>
     </button>
   );
 }

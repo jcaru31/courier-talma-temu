@@ -3,20 +3,18 @@
  * y Vista 2 (detalle vuelo con mini-trazabilidad).
  */
 
-function pasoTraslado(awb) {
-  // Un AWB cuenta como trasladado solo cuando ha llegado fisicamente.
-  // Planificadas (no han llegado) y guias faltantes (no llegaron) no cuentan.
-  return awb.status !== 'PLANIFICADO' && awb.status !== 'GUIA_FALTANTE';
+function pasoAerolinea() {
+  // La aerolinea numera el manifiesto e incorpora las guias antes del vuelo.
+  // Toda guia que existe en el sistema ya fue incorporada al manifiesto.
+  return true;
 }
 function pasoRecepcion(awb) {
-  return awb.timeline?.recepcion?.estado === 'COMPLETADO';
+  // El hito Recepcion abarca la llegada al almacen y el termino de tarja.
+  return awb.timeline?.tarja?.estado === 'COMPLETADO';
 }
 function pasoTransmisiones(awb) {
-  const subs = awb.timeline?.aduanas?.subeventos || [];
-  return subs.some((s) => /transmision/i.test(s.nombre) && s.estado === 'COMPLETADO');
-}
-function pasoAlmacenamiento(awb) {
-  return awb.timeline?.almacenamiento?.estado === 'COMPLETADO';
+  // Emision de volante + transmision de descarga + aviso de llegada.
+  return awb.timeline?.aduanas?.estado === 'COMPLETADO';
 }
 function pasoFacturacion(awb) {
   const subs = awb.timeline?.despacho_eseer?.subeventos || [];
@@ -27,9 +25,9 @@ function pasoDespacho(awb) {
 }
 
 const ETAPAS = [
-  { key: 'traslado', label: 'Traslado', test: pasoTraslado },
+  { key: 'aerolinea', label: 'Trasmisión Aerolínea', test: pasoAerolinea },
   { key: 'recepcion', label: 'Recepción', test: pasoRecepcion },
-  { key: 'transmisiones', label: 'Transmisiones', test: pasoTransmisiones },
+  { key: 'transmisiones', label: 'Trasmisión Almacén', test: pasoTransmisiones },
   { key: 'facturacion', label: 'Facturación', test: pasoFacturacion },
   { key: 'despacho', label: 'Despacho', test: pasoDespacho },
 ];
@@ -51,7 +49,11 @@ const SLA_THRESHOLD_MIN = 5 * 60 + 30; // 5h 30m
 
 // Para demo: "ahora" simulado en lugar de Date.now() real. Lo dejo cercano al
 // limite SLA del vuelo de hoy para que el cronometro se vea trabajando.
-const NOW_DEMO = new Date('2026-05-08T08:45:00-05:00');
+// "Ahora" del demo: solo el DÍA cambia con el shift; la hora-del-día se
+// mantiene fija (REF_HOUR en utils/time.js) para que los countdowns sean
+// estables y no dependan del reloj real del usuario.
+const { peruNow } = require('./time');
+const ahora = peruNow;
 
 /**
  * SLA = fin de la ultima transmision - ATA
@@ -112,7 +114,7 @@ function calcularSlaVuelo(awbs) {
   const minutosEntre = (a, b) => Math.max(0, Math.round((new Date(b) - new Date(a)) / 60000));
   const sla_minutos = completo
     ? minutosEntre(ata, finTransmisiones)
-    : minutosEntre(ata, NOW_DEMO.toISOString());
+    : minutosEntre(ata, ahora().toISOString());
 
   let status;
   if (completo) {
@@ -134,19 +136,19 @@ function calcularSlaVuelo(awbs) {
 }
 
 /**
- * Hito actual del AWB en la trazabilidad de proceso. Alineado con los 5 hitos
- * que se muestran en la grafica: TRASLADO / RECEPCION / TRANSMISIONES /
- * FACTURACION / DESPACHO. Devuelve el hito MAS AVANZADO que ya se completo
- * (o el siguiente en curso). Casos especiales: PLANIFICADO, FALTANTE.
+ * Estado de la guía = el hito que está trabajando AHORA (el primero que aún
+ * no termina). La guía se considera MANIFESTADO hasta el fin de tarja
+ * (recepción). Al completar el último hito (Despacho / entrega de carga) el
+ * estado terminal es ENTREGADA — distinto de "en Despacho". Caso especial:
+ * FALTANTE.
  */
 function determinarEstadoTracking(awb) {
-  if (awb.status === 'PLANIFICADO') return 'PLANIFICADO';
   if (awb.status === 'GUIA_FALTANTE') return 'FALTANTE';
-  if (pasoDespacho(awb)) return 'DESPACHO';
-  if (pasoFacturacion(awb)) return 'FACTURACION';
-  if (pasoTransmisiones(awb)) return 'TRANSMISIONES';
-  if (pasoRecepcion(awb)) return 'RECEPCION';
-  return 'TRASLADO';
+  if (!pasoRecepcion(awb)) return 'MANIFESTADO';
+  if (!pasoTransmisiones(awb)) return 'TRANSMISIONES';
+  if (!pasoFacturacion(awb)) return 'FACTURACION';
+  if (!pasoDespacho(awb)) return 'DESPACHO';
+  return 'ENTREGADA';
 }
 
 const AEROLINEA_SHORT = {
@@ -157,6 +159,33 @@ const AEROLINEA_SHORT = {
 
 function shortName(aerolinea) {
   return AEROLINEA_SHORT[aerolinea] || (aerolinea ? aerolinea.split(' ')[0] : '—');
+}
+
+/**
+ * Estado de la aeronave en ruta hacia LIM, calculado contra el reloj real:
+ *   PROGRAMADO  — aun no despega del origen
+ *   EN_VUELO    — despego pero no ha aterrizado (incluye progreso 0-100)
+ *   ATERRIZADO  — ya arribo a LIM
+ */
+function calcularEstadoRuta(salidaIso, etaIso) {
+  if (!salidaIso || !etaIso) {
+    return { estado: 'ATERRIZADO', progreso: 100, minutos_para_arribo: 0 };
+  }
+  const salida = new Date(salidaIso);
+  const eta = new Date(etaIso);
+  const now = ahora();
+  if (now < salida) {
+    return { estado: 'PROGRAMADO', progreso: 0, minutos_para_arribo: Math.round((eta - now) / 60000) };
+  }
+  if (now >= eta) {
+    return { estado: 'ATERRIZADO', progreso: 100, minutos_para_arribo: 0 };
+  }
+  const progreso = Math.round(((now - salida) / (eta - salida)) * 100);
+  return {
+    estado: 'EN_VUELO',
+    progreso: Math.min(100, Math.max(0, progreso)),
+    minutos_para_arribo: Math.round((eta - now) / 60000),
+  };
 }
 
 function agruparPorVuelo(awbs, alertas) {
@@ -172,6 +201,9 @@ function agruparPorVuelo(awbs, alertas) {
         origen: awb.origen,
         destino: awb.destino,
         eta: awb.eta,
+        fecha_salida_origen: awb.fecha_salida_origen || null,
+        matricula: awb.matricula || null,
+        manifiesto_carga: awb.manifiesto_carga || null,
         fecha: awb.fecha,
         tipo_vuelo: awb.tipo_vuelo || 'PAX',
         awbs: [],
@@ -234,6 +266,10 @@ function agruparPorVuelo(awbs, alertas) {
       origen: v.origen,
       destino: v.destino,
       eta: v.eta,
+      fecha_salida_origen: v.fecha_salida_origen,
+      matricula: v.matricula,
+      manifiesto_carga: v.manifiesto_carga,
+      estado_ruta: calcularEstadoRuta(v.fecha_salida_origen, v.eta),
       fecha: v.fecha,
       tipo_vuelo: v.tipo_vuelo,
       trazabilidad: calcularTrazabilidad(v.awbs),
@@ -258,12 +294,15 @@ function agruparPorVuelo(awbs, alertas) {
   });
 }
 
-function detalleVuelo(awbs, alertas, manifiesto) {
+function detalleVuelo(awbs, alertas, manifiesto, clientes = []) {
   const delVuelo = awbs.filter((a) => a.manifiesto === manifiesto);
   if (delVuelo.length === 0) return null;
 
   const resumen = agruparPorVuelo(delVuelo, alertas)[0];
   const trazabilidad = calcularTrazabilidad(delVuelo);
+
+  // Indice de clientes para resolver el nombre del consignatario por AWB.
+  const nombrePorCli = new Map(clientes.map((c) => [c.id, c.nombre]));
 
   const awbsConEstado = delVuelo.map((a) => {
     const alertasActivas = alertas.filter(
@@ -271,6 +310,7 @@ function detalleVuelo(awbs, alertas, manifiesto) {
     );
     return {
       ...a,
+      consignatario_nombre: nombrePorCli.get(a.consignatario_id) || null,
       alertas_activas: alertasActivas,
       alertas_count: alertasActivas.length,
       estado_tracking: determinarEstadoTracking(a),

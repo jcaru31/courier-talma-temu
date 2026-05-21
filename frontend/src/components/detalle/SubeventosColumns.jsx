@@ -63,7 +63,7 @@ function Columna({ subeventos }) {
 }
 
 function SubeventoCard({ subevento }) {
-  const { nombre, fecha, estado, detalle } = subevento;
+  const { nombre, fecha, estado, detalle, ocultarFecha } = subevento;
   const esActiva = estado === 'ACTIVA';
   const esCompletado = estado === 'COMPLETADO';
   const esPendiente = estado === 'PENDIENTE';
@@ -79,9 +79,11 @@ function SubeventoCard({ subevento }) {
       <div className="flex items-start gap-2">
         <CheckIcono estado={estado} />
         <div className="flex-1 min-w-0">
-          <div className="text-[10px] text-muted tabular-nums">
-            {fecha ? formatFechaHora(fecha) : '—'}
-          </div>
+          {!ocultarFecha && (
+            <div className="text-[10px] text-muted tabular-nums">
+              {fecha ? formatFechaHora(fecha) : '—'}
+            </div>
+          )}
           <div
             className={`text-sm font-semibold ${
               esActiva ? 'text-danger' : esPendiente ? 'text-slate-400' : 'text-navy'

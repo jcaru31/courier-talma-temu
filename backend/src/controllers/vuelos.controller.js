@@ -1,8 +1,7 @@
 const dataStore = require('../services/dataStore');
 const { agruparPorVuelo, detalleVuelo } = require('../utils/vueloAggregations');
 const { paginar } = require('../utils/aggregations');
-
-const HOY_DEMO = '2026-05-08';
+const { peruToday } = require('../utils/time');
 
 function offsetDia(fechaBase, deltaDias) {
   const d = new Date(fechaBase + 'T00:00:00-05:00');
@@ -12,6 +11,7 @@ function offsetDia(fechaBase, deltaDias) {
 
 async function list(req, res, next) {
   try {
+    const HOY = peruToday();
     const data = await dataStore.read();
     let vuelos = agruparPorVuelo(data.awb_masters, data.alertas);
 
@@ -26,15 +26,43 @@ async function list(req, res, next) {
     if (req.query.aerolinea) {
       vuelos = vuelos.filter((v) => v.aerolinea_short === req.query.aerolinea);
     }
-    // Busqueda libre por vuelo o manifiesto (case-insensitive)
+    // Busqueda libre. Matchea por:
+    //   - vuelo / manifiesto / aerolinea (texto)
+    //   - AWB completo o ULTIMOS 4 digitos del AWB master
+    //     (caso de uso: guías parciales que pueden continuar en otro vuelo)
     if (req.query.buscar) {
       const q = String(req.query.buscar).trim().toLowerCase();
       if (q) {
+        const soloDigitos = q.replace(/\D/g, '');
+        const awbMatcheaPorDigitos = (awb) => {
+          if (!awb || soloDigitos.length < 2) return false;
+          const d = awb.replace(/\D/g, '');
+          return d.endsWith(soloDigitos);
+        };
+        // Indice AWB -> vuelos donde aparece. Util para el chip de UI.
+        const vuelosPorAwb = new Map();
+        for (const a of data.awb_masters) {
+          const awbStr = (a.awb || '').toLowerCase();
+          if (awbStr.includes(q) || awbMatcheaPorDigitos(awbStr)) {
+            if (!vuelosPorAwb.has(a.awb)) vuelosPorAwb.set(a.awb, new Set());
+            vuelosPorAwb.get(a.awb).add(a.manifiesto);
+          }
+        }
+        const manifiestosMatch = new Set();
+        for (const set of vuelosPorAwb.values()) for (const m of set) manifiestosMatch.add(m);
+
         vuelos = vuelos.filter(
           (v) =>
             (v.vuelo || '').toLowerCase().includes(q) ||
             (v.manifiesto || '').toLowerCase().includes(q) ||
-            (v.aerolinea_short || '').toLowerCase().includes(q)
+            (v.aerolinea_short || '').toLowerCase().includes(q) ||
+            manifiestosMatch.has(v.manifiesto)
+        );
+
+        // Devolvemos los matches AWB->vuelos para que la UI muestre un chip
+        // del estilo "AWB ...0608 aparece en: 5Y 1876, LA 7542".
+        res.locals.awbMatches = Array.from(vuelosPorAwb.entries()).map(
+          ([awb, mans]) => ({ awb, manifiestos: Array.from(mans) })
         );
       }
     }
@@ -50,9 +78,9 @@ async function list(req, res, next) {
     // Filtro de dia. Por defecto: ultimos 7 dias incluyendo hoy.
     // fecha_desde / fecha_hasta tienen prioridad sobre 'dia'.
     const dia = req.query.dia || 'ultimos7';
-    const manana = offsetDia(HOY_DEMO, 1);
-    const hace7 = offsetDia(HOY_DEMO, -7);
-    let rango = { desde: hace7, hasta: HOY_DEMO };
+    const manana = offsetDia(HOY, 1);
+    const hace7 = offsetDia(HOY, -7);
+    let rango = { desde: hace7, hasta: HOY };
 
     const fechaDesde = req.query.fecha_desde;
     const fechaHasta = req.query.fecha_hasta;
@@ -62,14 +90,14 @@ async function list(req, res, next) {
       vuelos = vuelos.filter((v) => v.fecha >= desde && v.fecha <= hasta);
       rango = { desde, hasta };
     } else if (dia === 'hoy') {
-      vuelos = vuelos.filter((v) => v.fecha === HOY_DEMO);
-      rango = { desde: HOY_DEMO, hasta: HOY_DEMO };
+      vuelos = vuelos.filter((v) => v.fecha === HOY);
+      rango = { desde: HOY, hasta: HOY };
     } else if (dia === 'manana') {
       vuelos = vuelos.filter((v) => v.fecha === manana);
       rango = { desde: manana, hasta: manana };
     } else if (dia === 'anteriores') {
-      vuelos = vuelos.filter((v) => v.fecha < HOY_DEMO && v.fecha >= hace7);
-      rango = { desde: hace7, hasta: offsetDia(HOY_DEMO, -1) };
+      vuelos = vuelos.filter((v) => v.fecha < HOY && v.fecha >= hace7);
+      rango = { desde: hace7, hasta: offsetDia(HOY, -1) };
     } else if (dia === 'incluir_manana') {
       vuelos = vuelos.filter((v) => v.fecha >= hace7 && v.fecha <= manana);
       rango = { desde: hace7, hasta: manana };
@@ -78,12 +106,24 @@ async function list(req, res, next) {
       rango = null;
     } else {
       // ultimos7 (default): hoy + 7 atras
-      vuelos = vuelos.filter((v) => v.fecha >= hace7 && v.fecha <= HOY_DEMO);
+      vuelos = vuelos.filter((v) => v.fecha >= hace7 && v.fecha <= HOY);
     }
 
     vuelos.sort((a, b) => new Date(b.eta) - new Date(a.eta));
     const paginado = paginar(vuelos, req.query);
-    res.json({ ...paginado, rango, hoy: HOY_DEMO, manana });
+    // Enriquecemos vuelos con el resumen de cuantas guias matchearon el AWB
+    // buscado (para resaltarlas en la fila expandida). El mapping completo
+    // de matches va al top-level de la respuesta para el chip global.
+    const matches = res.locals.awbMatches || [];
+    const vueloEnriquecido = paginado.items.map((v) => {
+      const awbsEnEstaPaginaQueMatchean = matches
+        .filter((m) => m.manifiestos.includes(v.manifiesto))
+        .map((m) => m.awb);
+      return awbsEnEstaPaginaQueMatchean.length > 0
+        ? { ...v, awbs_matcheados: awbsEnEstaPaginaQueMatchean }
+        : v;
+    });
+    res.json({ ...paginado, items: vueloEnriquecido, rango, hoy: HOY, manana, awb_matches: matches });
   } catch (err) {
     next(err);
   }
@@ -92,7 +132,7 @@ async function list(req, res, next) {
 async function detail(req, res, next) {
   try {
     const data = await dataStore.read();
-    const result = detalleVuelo(data.awb_masters, data.alertas, req.params.manifiesto);
+    const result = detalleVuelo(data.awb_masters, data.alertas, req.params.manifiesto, data.clientes);
     if (!result) {
       return res.status(404).json({ error: 'Vuelo no encontrado' });
     }

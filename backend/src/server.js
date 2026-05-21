@@ -1,10 +1,12 @@
 const express = require('express');
 const cors = require('cors');
+const path = require('path');
 const env = require('./config/env');
 const errorHandler = require('./middleware/errorHandler');
 
 const awbMastersRoutes = require('./routes/awbMasters.routes');
 const vuelosRoutes = require('./routes/vuelos.routes');
+const inventarioRoutes = require('./routes/inventario.routes');
 const alertasRoutes = require('./routes/alertas.routes');
 const notificacionesRoutes = require('./routes/notificaciones.routes');
 
@@ -12,6 +14,11 @@ const app = express();
 
 app.use(cors());
 app.use(express.json());
+
+// Fotos y PDFs originales de actas de mercancia en mal estado.
+// Estructura esperada: backend/data/actas/photos/foto-{1..5}.jpg
+// y backend/data/actas/acta-original.pdf (compartido en demo).
+app.use('/actas', express.static(path.join(__dirname, '..', 'data', 'actas')));
 
 app.get('/api/health', (req, res) => {
   res.json({
@@ -24,6 +31,7 @@ app.get('/api/health', (req, res) => {
 
 app.use('/api/awb-masters', awbMastersRoutes);
 app.use('/api/vuelos', vuelosRoutes);
+app.use('/api/inventario', inventarioRoutes);
 app.use('/api/alertas', alertasRoutes);
 app.use('/api/notificaciones', notificacionesRoutes);
 

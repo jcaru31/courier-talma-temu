@@ -24,6 +24,10 @@ export const api = {
     return request(`/vuelos${qs ? `?${qs}` : ''}`);
   },
   getVuelo: (manifiesto) => request(`/vuelos/${encodeURIComponent(manifiesto)}`),
+  listInventario: (params = {}) => {
+    const qs = new URLSearchParams(params).toString();
+    return request(`/inventario${qs ? `?${qs}` : ''}`);
+  },
   listAlertas: (params = {}) => {
     const qs = new URLSearchParams(params).toString();
     return request(`/alertas${qs ? `?${qs}` : ''}`);

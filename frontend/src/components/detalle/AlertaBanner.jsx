@@ -1,28 +1,9 @@
-import { useState } from 'react';
-import { api } from '../../services/api.js';
-
-export default function AlertaBanner({ alertas, onNotificado }) {
-  const [enviando, setEnviando] = useState(null);
-  const [mensaje, setMensaje] = useState(null);
-
+/**
+ * Banner informativo de las alertas activas de la guía. Solo muestra datos —
+ * la acción de notificación se gestiona desde otra superficie del producto.
+ */
+export default function AlertaBanner({ alertas }) {
   if (!alertas || alertas.length === 0) return null;
-
-  const notificar = async (alertaId) => {
-    setEnviando(alertaId);
-    setMensaje(null);
-    try {
-      const res = await api.notificarAlerta(alertaId);
-      setMensaje({
-        tipo: 'ok',
-        texto: `Notificacion enviada: ${res.generadas.length} mensajes (${res.generadas.filter((g) => g.mock).length} en modo MOCK)`,
-      });
-      onNotificado?.();
-    } catch (err) {
-      setMensaje({ tipo: 'error', texto: err.message });
-    } finally {
-      setEnviando(null);
-    }
-  };
 
   return (
     <div className="space-y-2">
@@ -54,26 +35,8 @@ export default function AlertaBanner({ alertas, onNotificado }) {
               <div className="text-sm text-slate-800">{a.motivo}</div>
             </div>
           </div>
-          <button
-            onClick={() => notificar(a.id)}
-            disabled={enviando === a.id}
-            className="shrink-0 self-start bg-danger hover:bg-red-700 disabled:bg-red-300 text-white text-xs font-semibold uppercase tracking-wide px-4 py-2 rounded-md flex items-center gap-2"
-          >
-            {enviando === a.id ? 'Enviando...' : 'Notificar a Temu'}
-            {enviando !== a.id && (
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <line x1="22" y1="2" x2="11" y2="13" />
-                <polygon points="22 2 15 22 11 13 2 9 22 2" />
-              </svg>
-            )}
-          </button>
         </div>
       ))}
-      {mensaje && (
-        <div className={`text-sm px-3 py-2 rounded-md ${mensaje.tipo === 'ok' ? 'bg-emerald-50 text-emerald-800' : 'bg-red-100 text-danger'}`}>
-          {mensaje.texto}
-        </div>
-      )}
     </div>
   );
 }

@@ -10,6 +10,7 @@ const COLORS = {
 export default function EtapaIcono({ etapa, activo, size = 28 }) {
   const stroke = activo ? COLORS.active : COLORS.pending;
   const ICONOS = {
+    aerolinea: <Aerolinea color={stroke} size={size} />,
     traslado: <Traslado color={stroke} size={size} />,
     recepcion: <Recepcion color={stroke} size={size} />,
     transmisiones: <Transmisiones color={stroke} size={size} />,
@@ -18,6 +19,26 @@ export default function EtapaIcono({ etapa, activo, size = 28 }) {
     despacho: <Despacho color={stroke} size={size} />,
   };
   return ICONOS[etapa] || null;
+}
+
+function Aerolinea({ color, size }) {
+  // Declaración Aérea: documento con avioncito (manifiesto / declaración).
+  return svg(size, (
+    <g stroke={color}>
+      <path
+        d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"
+        fill={color}
+        fillOpacity="0.08"
+      />
+      <path d="M14 3v6h6" />
+      <path
+        d="M11.7 11.4c.2 0 .4.2.4.4v2.3l3.4 2v.9l-3.4-1v2.7l.9.7v.7l-1.3-.4-1.3.4v-.7l.9-.7V16l-3.4 1v-.9l3.4-2v-2.3c0-.2.2-.4.4-.4Z"
+        fill={color}
+        fillOpacity="0.5"
+        strokeWidth="1"
+      />
+    </g>
+  ));
 }
 
 function svg(size, children) {

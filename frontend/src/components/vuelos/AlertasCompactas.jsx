@@ -1,6 +1,6 @@
 /**
- * 4 mini-cards (Faltantes / Parciales / Inmov / Mal estado) con numero grande y
- * label legible. Si todas estan en 0: badge verde "Sin alertas".
+ * 4 mini-cards (Faltantes / Parciales / Inmov / Mal estado) con número grande
+ * y label legible. Si todas están en 0: badge verde "Sin alertas".
  */
 export default function AlertasCompactas({
   faltantes = 0,
@@ -22,7 +22,7 @@ export default function AlertasCompactas({
   }
 
   return (
-    <div className="grid grid-cols-4 gap-1.5" style={{ minWidth: '240px' }}>
+    <div className="grid grid-cols-4 gap-1.5" style={{ minWidth: '280px' }}>
       <Cell num={faltantes} label="Faltantes" accent="violet" />
       <Cell num={parciales} label="Parciales" accent="amber" />
       <Cell num={inmov} label="Inmov." accent="orange" />
@@ -38,16 +38,17 @@ function Cell({ num, label, accent }) {
     amber: 'border-amber-300 bg-amber-50 text-amber-800',
     orange: 'border-orange-300 bg-orange-50 text-orange-700',
     red: 'border-red-300 bg-red-50 text-danger',
+    slate: 'border-slate-400 bg-slate-100 text-slate-700',
   };
   const INACTIVE = 'border-slate-200 bg-slate-50 text-slate-300';
 
   return (
     <div
-      className={`rounded-md border px-2 py-1.5 text-center ${activo ? ACTIVE[accent] : INACTIVE}`}
+      className={`rounded-md border px-1 py-1.5 text-center ${activo ? ACTIVE[accent] : INACTIVE}`}
       title={`${label}: ${num}`}
     >
       <div className="text-lg font-bold leading-tight tabular-nums">{num}</div>
-      <div className="text-[10px] uppercase tracking-wider font-semibold leading-tight mt-0.5">
+      <div className="text-[9px] uppercase tracking-tight font-semibold leading-tight mt-0.5 whitespace-nowrap">
         {label}
       </div>
     </div>

@@ -2,38 +2,43 @@ import { useState } from 'react';
 import VuelosTable from '../components/vuelos/VuelosTable.jsx';
 import FiltrosVuelos from '../components/vuelos/FiltrosVuelos.jsx';
 import AutoRefreshCounter from '../components/shared/AutoRefreshCounter.jsx';
+import VersionSwitcher from '../components/vuelos/versiones/VersionSwitcher.jsx';
+import VuelosMinimal from '../components/vuelos/versiones/VuelosMinimal.jsx';
+import VuelosSplit from '../components/vuelos/versiones/VuelosSplit.jsx';
+import VuelosAgenda from '../components/vuelos/versiones/VuelosAgenda.jsx';
 import { useAutoRefresh } from '../hooks/useAutoRefresh.js';
 import { useVuelos } from '../hooks/useVuelos.js';
 
-const TIPOS_ALERTA = [
-  { tipo: 'faltantes',  label: 'Faltantes', accent: 'violet' },
-  { tipo: 'parciales',  label: 'Parciales', accent: 'amber' },
-  { tipo: 'inmov',      label: 'Inmov.',    accent: 'orange' },
-  { tipo: 'mal_estado', label: 'Mal est.',  accent: 'red' },
-];
+const VERSION_KEY = 'vuelos_version';
 
 export default function AvanceVuelos() {
   const [filtros, setFiltros] = useState({});
   const [page, setPage] = useState(1);
   const [toast, setToast] = useState(null);
+  const [version, setVersion] = useState(
+    () => localStorage.getItem(VERSION_KEY) || 'clasica'
+  );
   const limit = 10;
 
-  const { items, total, total_pages, rango, loading, error, refetch } = useVuelos(filtros, page, limit);
+  const cambiarVersion = (v) => {
+    setVersion(v);
+    localStorage.setItem(VERSION_KEY, v);
+  };
+
+  const { items, total, total_pages, rango, hoy, manana, awb_matches, loading, error, refetch } = useVuelos(filtros, page, limit);
   const { minutos, segundos, reset } = useAutoRefresh(() => refetch());
 
   const handleManualRefresh = () => { refetch(); reset(); };
   const handleFiltrosChange = (f) => { setFiltros(f); setPage(1); };
   const handleBuscar = (v) => handleFiltrosChange({ ...filtros, buscar: v });
-  const handleTipoAlerta = (tipo) => handleFiltrosChange({ ...filtros, tipo_alerta: tipo || '' });
 
   const handleDescargar = () => {
-    setToast('La descarga de reportería histórica estará disponible próximamente.');
+    setToast('La exportación a Excel estará disponible próximamente.');
     setTimeout(() => setToast(null), 3500);
   };
 
   const desde = total === 0 ? 0 : (page - 1) * limit + 1;
   const hasta = Math.min(page * limit, total);
-  const alertaActiva = filtros.tipo_alerta || null;
 
   return (
     <div className="p-6 space-y-3">
@@ -41,19 +46,22 @@ export default function AvanceVuelos() {
       <div className="flex items-center justify-between gap-4 flex-wrap">
         <div className="flex items-center gap-3">
           <IconAvionBig />
-          <div>
-            <h1 className="text-lg font-bold tracking-wider text-slate-800 uppercase leading-tight">
-              Avance de vuelos importaciones — TEMU
-            </h1>
-            {rango && (
-              <div className="text-[11px] text-slate-500 mt-0.5 font-medium tracking-wide">
-                <span className="uppercase text-slate-400 font-semibold">Mostrando </span>
-                {formatRango(rango.desde, rango.hasta)}
-              </div>
-            )}
-          </div>
+          <h1 className="text-lg font-bold tracking-wider text-slate-800 uppercase leading-tight">
+            Avance de vuelos importaciones — TEMU
+          </h1>
         </div>
         <div className="flex items-center gap-3 flex-wrap">
+          <VersionSwitcher value={version} onChange={cambiarVersion} />
+          <div className="w-px h-7 bg-border" />
+          {rango && (
+            <span
+              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md border border-border bg-slate-50 text-[12px] font-medium text-slate-600"
+              title="Rango de fechas mostrado"
+            >
+              <IconCalendar />
+              {formatRango(rango.desde, rango.hasta)}
+            </span>
+          )}
           <AutoRefreshCounter minutos={minutos} segundos={segundos} />
           <div className="w-px h-7 bg-border" />
           <button
@@ -65,11 +73,10 @@ export default function AvanceVuelos() {
           <button
             onClick={handleDescargar}
             className="flex items-center gap-2 px-3 py-2 border border-navy text-navy bg-blue-50 rounded-md text-sm font-semibold hover:bg-blue-100"
-            title="Descargar reportería histórica de vuelos"
+            title="Exportar la reportería de vuelos a Excel"
           >
-            <IconDownload /> Descargar reportería
+            <IconDownload /> Exportar Excel
           </button>
-          <FiltrosVuelos filtros={filtros} onChange={handleFiltrosChange} />
         </div>
       </div>
 
@@ -81,13 +88,15 @@ export default function AvanceVuelos() {
             type="text"
             value={filtros.buscar || ''}
             onChange={(e) => handleBuscar(e.target.value)}
-            placeholder="Buscar Nº vuelo, aerolínea o manifiesto..."
+            placeholder="Buscar vuelo, aerolínea, manifiesto o guía (últimos 4 dígitos)..."
             className="pl-8 pr-3 py-1.5 text-sm border border-border rounded-md w-72 focus:outline-none focus:ring-2 focus:ring-navy/30"
           />
           <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400">
             <IconSearch />
           </span>
         </div>
+
+        <FiltrosVuelos filtros={filtros} onChange={handleFiltrosChange} />
 
         <div className="w-px h-6 bg-border" />
 
@@ -97,33 +106,6 @@ export default function AvanceVuelos() {
           <Dot color="bg-ok" label="Completo" />
           <Dot color="bg-warn" label="En proceso" />
           <Dot color="bg-slate-300" label="Pendiente" />
-        </div>
-
-        <div className="w-px h-6 bg-border" />
-
-        {/* Filtros por categoría de alerta */}
-        <div className="flex items-center gap-1.5 flex-wrap">
-          <span className="text-[10px] uppercase tracking-wider text-muted font-semibold mr-1">
-            Filtrar alertas
-          </span>
-          {TIPOS_ALERTA.map((t) => (
-            <AlertaMini
-              key={t.tipo}
-              tipo={t.tipo}
-              label={t.label}
-              accent={t.accent}
-              activa={alertaActiva === t.tipo}
-              onClick={handleTipoAlerta}
-            />
-          ))}
-          {alertaActiva && (
-            <button
-              onClick={() => handleTipoAlerta(null)}
-              className="text-[11px] text-slate-500 hover:text-slate-900 underline font-medium ml-1"
-            >
-              Quitar
-            </button>
-          )}
         </div>
 
         {/* Paginación a la derecha */}
@@ -146,7 +128,47 @@ export default function AvanceVuelos() {
         <div className="card p-4 border-danger text-danger text-sm">Error: {error}</div>
       )}
 
-      <VuelosTable items={items} loading={loading} />
+      {/* Chip de matches por AWB: cuando el usuario buscó (típicamente por los
+          últimos 4 dígitos), enseña en qué vuelos aparece esa guía. Útil
+          para guías parciales cuyo restante puede venir en otro vuelo. */}
+      {filtros.buscar && (awb_matches?.length || 0) > 0 && (
+        <div className="card px-3 py-2 flex items-center gap-2 flex-wrap text-[12px]">
+          <span className="text-[10px] uppercase tracking-wider text-muted font-semibold">
+            Resultado por guía
+          </span>
+          {awb_matches.map((m) => (
+            <span
+              key={m.awb}
+              className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md border border-navy/30 bg-blue-50 text-navy"
+            >
+              <span className="text-[11px] font-bold tabular-nums">{m.awb}</span>
+              <span className="text-[10px] uppercase tracking-wide opacity-70">
+                {m.manifiestos.length === 1 ? 'vuelo:' : 'vuelos:'}
+              </span>
+              <span className="text-[11px] font-semibold">{m.manifiestos.join(', ')}</span>
+            </span>
+          ))}
+        </div>
+      )}
+
+      {version === 'clasica' && (
+        <VuelosTable items={items} loading={loading} prefilterQuery={filtros.buscar || ''} />
+      )}
+      {version === 'minimal' && (
+        <VuelosMinimal items={items} loading={loading} prefilterQuery={filtros.buscar || ''} />
+      )}
+      {version === 'split' && (
+        <VuelosSplit items={items} loading={loading} prefilterQuery={filtros.buscar || ''} />
+      )}
+      {version === 'agenda' && (
+        <VuelosAgenda
+          items={items}
+          loading={loading}
+          prefilterQuery={filtros.buscar || ''}
+          hoy={hoy}
+          manana={manana}
+        />
+      )}
 
       {toast && (
         <div className="fixed bottom-6 right-6 bg-slate-900 text-white px-4 py-3 rounded-md shadow-lg text-sm font-medium max-w-sm z-50">
@@ -154,33 +176,6 @@ export default function AvanceVuelos() {
         </div>
       )}
     </div>
-  );
-}
-
-function AlertaMini({ tipo, label, accent, activa, onClick }) {
-  const STYLES = {
-    violet: 'border-violet-300 bg-violet-50 text-violet-800 hover:bg-violet-100',
-    amber:  'border-amber-300 bg-amber-50 text-amber-800 hover:bg-amber-100',
-    orange: 'border-orange-300 bg-orange-50 text-orange-700 hover:bg-orange-100',
-    red:    'border-red-300 bg-red-50 text-danger hover:bg-red-100',
-  };
-  const RING = {
-    violet: 'ring-2 ring-violet-500',
-    amber:  'ring-2 ring-amber-500',
-    orange: 'ring-2 ring-orange-500',
-    red:    'ring-2 ring-red-500',
-  };
-  return (
-    <button
-      type="button"
-      onClick={() => onClick(activa ? null : tipo)}
-      className={`rounded-md border px-2 py-1 text-center transition ${STYLES[accent]} ${
-        activa ? RING[accent] + ' shadow-sm' : ''
-      }`}
-      title={`Filtrar vuelos con ${label.toLowerCase()}`}
-    >
-      <span className="text-[11px] font-bold uppercase tracking-wider">{label}</span>
-    </button>
   );
 }
 
@@ -230,6 +225,16 @@ function IconSearch() {
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <circle cx="11" cy="11" r="7" />
       <line x1="21" y1="21" x2="16.65" y2="16.65" />
+    </svg>
+  );
+}
+function IconCalendar() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="3" y="4" width="18" height="18" rx="2" />
+      <line x1="16" y1="2" x2="16" y2="6" />
+      <line x1="8" y1="2" x2="8" y2="6" />
+      <line x1="3" y1="10" x2="21" y2="10" />
     </svg>
   );
 }

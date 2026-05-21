@@ -15,6 +15,14 @@ const OPCIONES_AEROLINEA = [
   { value: 'ATLAS', label: 'ATLAS' },
 ];
 
+const OPCIONES_ALERTA = [
+  { value: '', label: 'Todas las alertas' },
+  { value: 'faltantes', label: 'Con guías faltantes' },
+  { value: 'parciales', label: 'Con guías parciales' },
+  { value: 'inmov', label: 'Con inmovilizadas' },
+  { value: 'mal_estado', label: 'Con mal estado' },
+];
+
 export default function FiltrosVuelos({ filtros, onChange }) {
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
@@ -27,7 +35,7 @@ export default function FiltrosVuelos({ filtros, onChange }) {
     return () => document.removeEventListener('mousedown', onClickOut);
   }, []);
 
-  const tieneFiltros = ['dia', 'aerolinea', 'fecha_desde', 'fecha_hasta'].some(
+  const tieneFiltros = ['dia', 'aerolinea', 'tipo_alerta', 'fecha_desde', 'fecha_hasta'].some(
     (k) => filtros[k] && filtros[k] !== ''
   );
 
@@ -37,6 +45,7 @@ export default function FiltrosVuelos({ filtros, onChange }) {
       ...filtros,
       dia: '',
       aerolinea: '',
+      tipo_alerta: '',
       fecha_desde: '',
       fecha_hasta: '',
     });
@@ -60,7 +69,7 @@ export default function FiltrosVuelos({ filtros, onChange }) {
       </button>
 
       {open && (
-        <div className="absolute right-0 mt-2 w-80 bg-white border border-border rounded-md shadow-lg z-10 p-4 space-y-3">
+        <div className="absolute left-0 mt-2 w-80 bg-white border border-border rounded-md shadow-lg z-20 p-4 space-y-3">
           <Select
             label="Día"
             value={filtros.dia || ''}
@@ -74,6 +83,12 @@ export default function FiltrosVuelos({ filtros, onChange }) {
             value={filtros.aerolinea || ''}
             options={OPCIONES_AEROLINEA}
             onChange={(v) => update('aerolinea', v)}
+          />
+          <Select
+            label="Alertas"
+            value={filtros.tipo_alerta || ''}
+            options={OPCIONES_ALERTA}
+            onChange={(v) => update('tipo_alerta', v)}
           />
           <div>
             <div className="label-xs mb-1">Rango de fechas (personalizado)</div>

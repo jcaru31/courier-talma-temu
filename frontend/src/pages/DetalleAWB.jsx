@@ -1,9 +1,6 @@
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAwbDetail } from '../hooks/useAwbDetail.js';
-import HeaderAWB from '../components/detalle/HeaderAWB.jsx';
-import AlertaBanner from '../components/detalle/AlertaBanner.jsx';
-import TimelineHorizontal from '../components/detalle/TimelineHorizontal.jsx';
-import SubeventosColumns from '../components/detalle/SubeventosColumns.jsx';
+import AwbDetalleContenido from '../components/detalle/AwbDetalleContenido.jsx';
 
 export default function DetalleAWB() {
   const { id } = useParams();
@@ -61,21 +58,7 @@ export default function DetalleAWB() {
       {error && (
         <div className="card p-4 border-danger text-danger text-sm">Error: {error}</div>
       )}
-      {awb && (
-        <>
-          {/* Banner alertas */}
-          <AlertaBanner alertas={awb.alertas_activas} onNotificado={refetch} />
-
-          {/* Header con datos */}
-          <HeaderAWB awb={awb} />
-
-          {/* Timeline horizontal con los 5 hitos */}
-          <TimelineHorizontal awb={awb} />
-
-          {/* Subeventos por hito */}
-          <SubeventosColumns awb={awb} />
-        </>
-      )}
+      {awb && <AwbDetalleContenido awb={awb} onRefetch={refetch} />}
     </div>
   );
 }

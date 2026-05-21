@@ -3,6 +3,7 @@ import Sidebar from './components/layout/Sidebar.jsx';
 import AvanceVuelos from './pages/AvanceVuelos.jsx';
 import DetalleVuelo from './pages/DetalleVuelo.jsx';
 import DetalleAWB from './pages/DetalleAWB.jsx';
+import Inventario from './pages/Inventario.jsx';
 
 export default function App() {
   return (
@@ -14,6 +15,7 @@ export default function App() {
           <Route path="/vuelos" element={<AvanceVuelos />} />
           <Route path="/vuelos/:manifiesto" element={<DetalleVuelo />} />
           <Route path="/awb/:id" element={<DetalleAWB />} />
+          <Route path="/inventario" element={<Inventario />} />
         </Routes>
       </main>
     </div>
