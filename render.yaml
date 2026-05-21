@@ -1,0 +1,25 @@
+# Blueprint de Render para desplegar el tablero como UN solo servicio web:
+# Express sirve la API (/api) y el frontend ya compilado (frontend/dist).
+# Render redespliega automáticamente en cada push a la rama conectada.
+services:
+  - type: web
+    name: courier-talma-temu
+    runtime: node
+    plan: free
+    region: oregon
+    # Instala dependencias de backend y frontend (incluyendo devDeps, porque
+    # Vite es devDependency) y compila el frontend.
+    buildCommand: npm install --prefix backend && npm install --prefix frontend --include=dev && npm run build --prefix frontend
+    startCommand: node backend/src/server.js
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_VERSION
+        value: "20"
+      # Fuerza la instalación de devDependencies durante el build.
+      - key: NPM_CONFIG_PRODUCTION
+        value: "false"
+      # Evita que Playwright (devDependency) descargue navegadores en el build.
+      - key: PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD
+        value: "1"
+      - key: NOTIFICATIONS_MOCK
+        value: "true"

@@ -1,6 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
+const fs = require('fs');
 const env = require('./config/env');
 const errorHandler = require('./middleware/errorHandler');
 
@@ -35,9 +36,28 @@ app.use('/api/inventario', inventarioRoutes);
 app.use('/api/alertas', alertasRoutes);
 app.use('/api/notificaciones', notificacionesRoutes);
 
-app.use((req, res) => {
+// API no encontrada → JSON (no debe caer en el fallback del frontend).
+app.use('/api', (req, res) => {
   res.status(404).json({ error: 'Ruta no encontrada', path: req.path });
 });
+
+// En producción servimos el frontend ya compilado (frontend/dist) desde el
+// mismo servicio. Así una sola URL pública entrega la API y la app. En
+// desarrollo no existe `dist` (se usa el dev server de Vite), así que solo
+// se activa cuando la carpeta está presente.
+const FRONTEND_DIST = path.join(__dirname, '..', '..', 'frontend', 'dist');
+if (fs.existsSync(FRONTEND_DIST)) {
+  app.use(express.static(FRONTEND_DIST));
+  // SPA fallback: cualquier ruta no-API devuelve index.html para que el
+  // router del cliente (React Router) maneje la navegación.
+  app.get('*', (req, res) => {
+    res.sendFile(path.join(FRONTEND_DIST, 'index.html'));
+  });
+} else {
+  app.use((req, res) => {
+    res.status(404).json({ error: 'Ruta no encontrada', path: req.path });
+  });
+}
 
 app.use(errorHandler);
 
