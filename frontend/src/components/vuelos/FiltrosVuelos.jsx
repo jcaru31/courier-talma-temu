@@ -23,7 +23,7 @@ const OPCIONES_ALERTA = [
   { value: 'mal_estado', label: 'Con mal estado' },
 ];
 
-export default function FiltrosVuelos({ filtros, onChange }) {
+export default function FiltrosVuelos({ filtros, onChange, iconOnly = false }) {
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
 
@@ -55,21 +55,38 @@ export default function FiltrosVuelos({ filtros, onChange }) {
 
   return (
     <div className="relative" ref={ref}>
-      <button
-        onClick={() => setOpen((o) => !o)}
-        className={`flex items-center gap-2 px-4 py-2 border rounded-md text-sm font-medium transition ${
-          tieneFiltros
-            ? 'border-navy text-navy bg-blue-50'
-            : 'border-border text-slate-700 hover:bg-slate-50'
-        }`}
-      >
-        <IconFilter />
-        Filtros
-        {tieneFiltros && <span className="w-2 h-2 bg-ok rounded-full" />}
-      </button>
+      {iconOnly ? (
+        <button
+          onClick={() => setOpen((o) => !o)}
+          title="Filtros"
+          className={`relative flex items-center justify-center w-9 h-9 border rounded-md transition shrink-0 ${
+            tieneFiltros
+              ? 'border-navy text-navy bg-blue-50'
+              : 'border-border text-slate-600 hover:bg-slate-50'
+          }`}
+        >
+          <IconFilter />
+          {tieneFiltros && (
+            <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-ok rounded-full ring-2 ring-white" />
+          )}
+        </button>
+      ) : (
+        <button
+          onClick={() => setOpen((o) => !o)}
+          className={`flex items-center gap-2 px-4 py-2 border rounded-md text-sm font-medium transition ${
+            tieneFiltros
+              ? 'border-navy text-navy bg-blue-50'
+              : 'border-border text-slate-700 hover:bg-slate-50'
+          }`}
+        >
+          <IconFilter />
+          Filtros
+          {tieneFiltros && <span className="w-2 h-2 bg-ok rounded-full" />}
+        </button>
+      )}
 
       {open && (
-        <div className="absolute left-0 mt-2 w-80 bg-white border border-border rounded-md shadow-lg z-20 p-4 space-y-3">
+        <div className={`absolute mt-2 w-80 bg-white border border-border rounded-md shadow-lg z-20 p-4 space-y-3 ${iconOnly ? 'right-0' : 'left-0'}`}>
           <Select
             label="Día"
             value={filtros.dia || ''}

@@ -75,6 +75,7 @@ export default function GuiasSimpleTable({
   alturaMaxima = '60vh',
   alturaMinima = '50vh',
   onSelectAwb = () => {},
+  fill = false,
 }) {
   const [busqueda, setBusqueda] = useState(prefilterQuery);
   const [verificacionAwb, setVerificacionAwb] = useState(null);
@@ -116,7 +117,10 @@ export default function GuiasSimpleTable({
 
   return (
     <>
-    <div className="card flex flex-col" style={{ minHeight: alturaMinima }}>
+    <div
+      className={`card flex flex-col ${fill ? 'flex-1 min-h-0' : ''}`}
+      style={fill ? undefined : { minHeight: alturaMinima }}
+    >
       {/* Cabecera de la tabla */}
       <div className="px-4 py-3 border-b border-border flex items-center gap-3 flex-wrap">
         <IconBox />
@@ -159,7 +163,10 @@ export default function GuiasSimpleTable({
       </div>
 
       {/* Tabla con scroll interno y header sticky */}
-      <div className="overflow-auto flex-1" style={{ maxHeight: alturaMaxima }}>
+      <div
+        className="overflow-auto flex-1 min-h-0"
+        style={fill ? undefined : { maxHeight: alturaMaxima }}
+      >
         <table className="w-full text-sm">
           <thead className="bg-slate-50 sticky top-0 z-10">
             {/* Fila de grupos: separa lo MANIFESTADO de lo REAL */}
