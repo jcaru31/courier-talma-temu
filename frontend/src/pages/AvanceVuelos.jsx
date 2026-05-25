@@ -7,6 +7,7 @@ import VuelosSplit from '../components/vuelos/versiones/VuelosSplit.jsx';
 import VuelosAgenda from '../components/vuelos/versiones/VuelosAgenda.jsx';
 import { useAutoRefresh } from '../hooks/useAutoRefresh.js';
 import { useVuelos } from '../hooks/useVuelos.js';
+import { useInventarioModal } from '../context/InventarioModalContext.jsx';
 
 const VERSION_KEY = 'vuelos_version';
 
@@ -26,6 +27,7 @@ export default function AvanceVuelos() {
 
   const { items, total, total_pages, hoy, manana, awb_matches, loading, error, refetch } = useVuelos(filtros, page, limit);
   const { reset } = useAutoRefresh(() => refetch());
+  const inventario = useInventarioModal();
 
   // Marca de tiempo de la última carga de datos: se actualiza cada vez que
   // termina un fetch (manual o por auto-refresh).
@@ -58,6 +60,21 @@ export default function AvanceVuelos() {
         </div>
         <div className="flex items-center gap-3 flex-wrap">
           <VersionSwitcher value={version} onChange={cambiarVersion} />
+          <div className="w-px h-6 bg-border" />
+          {/* En almacén: abre el modal con la tablita de guías en almacén */}
+          <button
+            onClick={inventario.open}
+            className="flex items-center gap-2 pl-2.5 pr-2 py-1.5 rounded-md border border-border text-slate-700 hover:bg-slate-50 transition"
+            title="Ver guías en almacén"
+          >
+            <IconAlmacen />
+            <span className="text-[13px] font-semibold">En almacén</span>
+            {inventario.total != null && (
+              <span className="inline-flex items-center justify-center min-w-[22px] px-1.5 py-0.5 rounded bg-navy text-white text-[11px] font-bold tabular-nums">
+                {inventario.total}
+              </span>
+            )}
+          </button>
           <div className="w-px h-6 bg-border" />
           {/* Actualizar: control discreto con icono que gira + fecha/hora inline */}
           <button
@@ -203,6 +220,16 @@ function IconAvionBig() {
   return (
     <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#0D2B6B" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <path d="M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.2c.4-.3.6-.7.5-1.2z" />
+    </svg>
+  );
+}
+function IconAlmacen() {
+  return (
+    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M3 9l9-5 9 5v11H3z" />
+      <rect x="7" y="13" width="3" height="4" />
+      <rect x="14" y="13" width="3" height="4" />
+      <line x1="3" y1="20" x2="21" y2="20" />
     </svg>
   );
 }

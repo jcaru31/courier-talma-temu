@@ -4,18 +4,47 @@ import { IconoAlerta } from './alertaIconos.jsx';
 import VerificacionModal, { IconDoc } from './VerificacionModal.jsx';
 import VolanteModal from './VolanteModal.jsx';
 import ActaMalEstadoModal from '../inventario/ActaMalEstadoModal.jsx';
+import { buildHitosAwb } from '../../utils/hitosAwb.js';
 
 // Estado de la guía = el hito que trabaja ahora (modelo "hito en curso").
-// MANIFESTADO normal: gris. FALTANTE: también dice MANIFESTADO pero en violeta.
-// ENTREGADA: estado terminal verde, distinto de "en Despacho".
-const ESTADOS_TRACK = {
-  MANIFESTADO:   { bg: 'bg-slate-100',  text: 'text-slate-500',   label: 'MANIFESTADO' },
-  FALTANTE:      { bg: 'bg-violet-50',  text: 'text-violet-700',  label: 'MANIFESTADO' },
-  TRANSMISIONES: { bg: 'bg-sky-50',     text: 'text-sky-700',     label: 'TRASMISIÓN ALMACÉN' },
-  FACTURACION:   { bg: 'bg-amber-50',   text: 'text-amber-700',   label: 'FACTURACIÓN' },
-  DESPACHO:      { bg: 'bg-indigo-50',  text: 'text-indigo-700',  label: 'DESPACHO' },
-  ENTREGADA:     { bg: 'bg-emerald-50', text: 'text-emerald-700', label: 'ENTREGADA' },
+// Colores:
+//   VERDE    — el hito previo terminó y el siguiente aún no empieza. La
+//              etiqueta lleva el nombre del siguiente hito (queda "a la espera").
+//   AMARILLO — el hito ya empezó: lleva su nombre + un círculo de estado
+//              animado que llama la atención.
+//   FALTANTE — guía manifestada que no arribó: quedó en Trasmisión Aerolínea
+//              (hasta ese punto la aerolínea la transmitió, pero nunca llegó a
+//              Recepción). Tono violeta para que no se lea como avance normal.
+// ENTREGADA es el estado terminal (verde con check).
+const HITO_LABEL = {
+  aerolinea:     'TRASMISIÓN AEROLÍNEA',
+  recepcion:     'RECEPCIÓN',
+  transmisiones: 'TRASMISIÓN ALMACÉN',
+  facturacion:   'FACTURACIÓN',
+  despacho:      'DESPACHO',
 };
+
+// Estado de la guía a partir de sus hitos reales (mismos que la Vista 3):
+//   AMARILLO + nombre → hay un hito EN CURSO (ya empezó, falta terminar). Ej.:
+//     al registrarse "Llegada al almacén" pasa de Trasm. Aerolínea a Recepción.
+//   VERDE + nombre    → el último hito COMPLETADO (nada en curso aún). Ej.: vuelo
+//     en el aire = "Trasm. Aerolínea" verde (lo único completado).
+//   VERDE + check     → Despacho completado = entregada (terminal).
+//   FALTANTE          → gris (no arribó); su distintivo es el ícono "?" + fila sombreada.
+function estadoGuia(a) {
+  if (a.estado_tracking === 'FALTANTE' || a.status === 'GUIA_FALTANTE') {
+    return { label: 'FALTANTE', tone: 'faltante', terminal: false };
+  }
+  const hitos = buildHitosAwb(a);
+  const enCurso = hitos.find((h) => h.estado === 'EN_CURSO');
+  if (enCurso) {
+    return { label: HITO_LABEL[enCurso.key] || '—', tone: 'amarillo', terminal: false };
+  }
+  const completados = hitos.filter((h) => h.estado === 'COMPLETADO');
+  const ultimo = completados[completados.length - 1];
+  const key = ultimo?.key || 'aerolinea';
+  return { label: HITO_LABEL[key], tone: 'verde', terminal: key === 'despacho' };
+}
 
 // Orden cronológico de los hitos: el más atrasado (FALTANTE/MANIFESTADO) ocupa
 // el peor lugar (0) y ENTREGADA el mejor (5). Se usa para sortear la tabla
@@ -125,14 +154,8 @@ export default function GuiasSimpleTable({
       <div className="px-4 py-3 border-b border-border flex items-center gap-3 flex-wrap">
         <IconBox />
         <h3 className="text-base font-bold tracking-wider text-slate-800 uppercase">
-          Guías asociadas
+          Guías
         </h3>
-        <span className="text-sm text-muted font-medium">
-          {awbsVisibles.length} {awbsVisibles.length === 1 ? 'guía' : 'guías'}
-          {totalSinFiltrar != null && awbsVisibles.length !== totalSinFiltrar && (
-            <span className="ml-1 text-slate-400">de {totalSinFiltrar}</span>
-          )}
-        </span>
         {filtroActivoLabel && (
           <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider bg-navy text-white px-2 py-1 rounded">
             Filtro: {filtroActivoLabel}
@@ -142,10 +165,10 @@ export default function GuiasSimpleTable({
           <button
             type="button"
             className="inline-flex items-center gap-2 px-3 py-1.5 border border-border text-slate-700 rounded-md text-sm font-medium hover:bg-slate-50"
-            title="Exportar las guías a Excel"
+            title="Exportar las guías"
           >
             <IconDownload />
-            Exportar Excel
+            Exportar
           </button>
           <div className="relative">
             <input
@@ -169,30 +192,24 @@ export default function GuiasSimpleTable({
       >
         <table className="w-full text-sm">
           <thead className="bg-slate-50 sticky top-0 z-10">
-            {/* Fila de grupos: separa lo MANIFESTADO de lo REAL */}
-            <tr className="text-[9px] tracking-wider uppercase text-muted font-bold border-b border-border/60">
-              <th className="w-8" />
-              <th />
-              <th />
-              <th className="px-3 pt-2 pb-1 text-center text-slate-400 bg-slate-100/60 border-l border-border">Manifestado</th>
-              <th className="px-3 pt-2 pb-1 text-center text-navy bg-blue-50/40 border-l border-border">Real</th>
-              <th />
-              <th />
-              <th />
-              <th />
-              <th />
+            {/* Encabezado normalizado: las columnas simples ocupan ambas filas
+                (rowSpan) y van centradas; solo Manifestado/Real se agrupan, así
+                no queda espacio vacío arriba del resto. */}
+            <tr className="text-[10px] tracking-wider uppercase text-muted font-semibold border-b border-border">
+              <Th rowSpan={2} className="w-8 align-middle" />
+              <Th rowSpan={2} className="text-left align-middle">Consignatario</Th>
+              <Th rowSpan={2} className="text-left align-middle">Nº Guía Aérea</Th>
+              <th className="px-3 pt-2 pb-1 text-center text-[9px] font-bold text-slate-400 bg-slate-100/60 border-l border-border">Manifestado</th>
+              <th className="px-3 pt-2 pb-1 text-center text-[9px] font-bold text-navy bg-blue-50/40 border-l border-border">Real</th>
+              <Th rowSpan={2} className="text-center align-middle">Mal<br/>estado</Th>
+              <Th rowSpan={2} className="text-center align-middle">Aviso de<br/>llegada</Th>
+              <Th rowSpan={2} className="text-center align-middle">Verificación<br/>Aduanera</Th>
+              <Th rowSpan={2} className="text-left align-middle">Estado</Th>
+              <Th rowSpan={2} className="align-middle" />
             </tr>
-            <tr className="text-left text-[10px] tracking-wider uppercase text-muted font-semibold border-b border-border">
-              <Th className="w-8"></Th>
-              <Th>Consignatario</Th>
-              <Th>Nº Guía Aérea</Th>
-              <Th className="text-right bg-slate-100/60 border-l border-border">Bultos<br/>Peso (kg)</Th>
-              <Th className="text-right bg-blue-50/40 border-l border-border">Bultos<br/>Peso (kg)</Th>
-              <Th className="text-center">Mal<br/>estado</Th>
-              <Th className="text-center">Aviso de<br/>llegada</Th>
-              <Th className="text-center">Verificación<br/>Aduanera</Th>
-              <Th>Estado</Th>
-              <Th></Th>
+            <tr className="text-[9px] tracking-wider uppercase text-muted font-semibold border-b border-border">
+              <th className="px-3 pb-2 text-right text-slate-400 bg-slate-100/60 border-l border-border">Bultos · Peso (kg)</th>
+              <th className="px-3 pb-2 text-right text-navy bg-blue-50/40 border-l border-border">Bultos · Peso (kg)</th>
             </tr>
           </thead>
           <tbody>
@@ -204,7 +221,6 @@ export default function GuiasSimpleTable({
               </tr>
             )}
             {awbsVisibles.map((a) => {
-              const trk = ESTADOS_TRACK[a.estado_tracking] || ESTADOS_TRACK.MANIFESTADO;
               const esFaltante = a.status === 'GUIA_FALTANTE';
               const auth = autorizacionSalida(a);
               const bultosMal = a.bultos_mal_estado || 0;
@@ -220,7 +236,9 @@ export default function GuiasSimpleTable({
                 <tr
                   key={a.id}
                   onClick={() => onSelectAwb(a.id)}
-                  className="border-b border-border hover:bg-slate-50 transition cursor-pointer"
+                  className={`border-b border-border transition cursor-pointer ${
+                    esFaltante ? 'bg-slate-100/70 hover:bg-slate-100' : 'hover:bg-slate-50'
+                  }`}
                 >
                   <Td className="text-center px-2">
                     <EstadoFilaIcono a={a} entregada={esEntregada} />
@@ -272,9 +290,7 @@ export default function GuiasSimpleTable({
                     />
                   </Td>
                   <Td>
-                    <span className={`inline-flex items-center px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wide ${trk.bg} ${trk.text}`}>
-                      {trk.label}
-                    </span>
+                    <EstadoChip a={a} />
                   </Td>
                   <Td>
                     <button
@@ -307,6 +323,45 @@ export default function GuiasSimpleTable({
       />
     )}
     </>
+  );
+}
+
+// Chip de estado de la guía. Solo dos colores (ver `estadoGuia`):
+//   amarillo + círculo animado → el hito ya empezó (en curso, requiere atención)
+//   verde → hito previo terminado y el siguiente aún no inicia (al día)
+//   verde con check → ENTREGADA (terminal)
+function EstadoChip({ a }) {
+  const e = estadoGuia(a);
+  if (e.tone === 'faltante') {
+    return (
+      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wide bg-slate-100 text-slate-500">
+        <span className="shrink-0"><IconoAlerta tipo="faltantes" size={12} /></span>
+        {e.label}
+      </span>
+    );
+  }
+  if (e.tone === 'amarillo') {
+    return (
+      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wide bg-amber-50 text-amber-700">
+        <span className="relative flex h-2 w-2 shrink-0">
+          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75" />
+          <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500" />
+        </span>
+        {e.label}
+      </span>
+    );
+  }
+  return (
+    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wide bg-emerald-50 text-emerald-700">
+      {e.terminal ? (
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
+          <polyline points="20 6 9 17 4 12" />
+        </svg>
+      ) : (
+        <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
+      )}
+      {e.label}
+    </span>
   );
 }
 
@@ -419,7 +474,7 @@ function alertasDeGuia(a) {
   const out = [];
   const esFaltante = a.status === 'GUIA_FALTANTE';
   if (esFaltante)
-    out.push({ tipo: 'faltantes', color: 'text-violet-700', dark: 'text-violet-300', label: 'Faltante', desc: 'Guía manifestada que no arribó al terminal.' });
+    out.push({ tipo: 'faltantes', color: 'text-slate-500', dark: 'text-slate-300', label: 'Faltante', desc: 'Guía manifestada que no arribó al terminal.' });
   if (a.canal_dam?.color === 'ROJO' && a.canal_dam?.con_levante === false)
     out.push({ tipo: 'inmov', color: 'text-orange-600', dark: 'text-orange-300', label: 'Inmovilizada', desc: 'Canal rojo sin levante: carga retenida por aduanas.' });
   if ((a.bultos_mal_estado || 0) > 0)
@@ -506,8 +561,8 @@ function IconosTooltip({ alertas, anchorRect }) {
   );
 }
 
-function Th({ children, className = '' }) {
-  return <th className={`px-3 py-2.5 font-semibold leading-tight ${className}`}>{children}</th>;
+function Th({ children, className = '', ...rest }) {
+  return <th {...rest} className={`px-3 py-2.5 font-semibold leading-tight ${className}`}>{children}</th>;
 }
 function Td({ children, className = '' }) {
   return <td className={`px-3 py-2.5 align-middle ${className}`}>{children}</td>;

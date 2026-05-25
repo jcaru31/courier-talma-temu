@@ -3016,7 +3016,7 @@
         "fecha_incorporacion_guias": "2026-05-04T05:00:00-05:00"
       },
       "volante": "VOL-2026-94518",
-      "handling_pagado": true,
+      "handling_pagado": false,
       "bultos_esperados": 122,
       "bultos_recibidos": 122,
       "kgs_esperados": 2480.88,
@@ -3024,7 +3024,7 @@
       "bultos_mal_estado": 0,
       "bultos_faltantes": 0,
       "tarja_porcentaje": 100,
-      "status": "DESPACHADO_A_ESEER",
+      "status": "EN_PROCESO",
       "dam": "235-26-S6O-181086-99-314",
       "canal_dam": {
         "numero": "2352651071129",
@@ -3137,39 +3137,10 @@
           ]
         },
         "despacho_eseer": {
-          "estado": "COMPLETADO",
-          "fecha_inicio": "2026-05-07T10:00:00-05:00",
-          "fecha_fin": "2026-05-07T12:32:00-05:00",
-          "subeventos": [
-            {
-              "nombre": "Facturacion handling",
-              "fecha": "2026-05-07T10:00:00-05:00",
-              "estado": "COMPLETADO"
-            },
-            {
-              "nombre": "Facturacion traslado postal",
-              "fecha": "2026-05-07T10:37:00-05:00",
-              "estado": "COMPLETADO"
-            },
-            {
-              "nombre": "Ingreso de transportista",
-              "fecha": "2026-05-07T11:21:00-05:00",
-              "estado": "COMPLETADO",
-              "detalle": {
-                "placa": "NYM-989"
-              }
-            },
-            {
-              "nombre": "Inicio de estiba",
-              "fecha": "2026-05-07T11:38:00-05:00",
-              "estado": "COMPLETADO"
-            },
-            {
-              "nombre": "Entrega de carga",
-              "fecha": "2026-05-07T12:32:00-05:00",
-              "estado": "COMPLETADO"
-            }
-          ]
+          "estado": "PENDIENTE",
+          "fecha_inicio": null,
+          "fecha_fin": null,
+          "subeventos": []
         }
       }
     },
@@ -3211,7 +3182,7 @@
         "fecha_incorporacion_guias": "2026-05-04T05:00:00-05:00"
       },
       "volante": "VOL-2026-06496",
-      "handling_pagado": true,
+      "handling_pagado": false,
       "bultos_esperados": 206,
       "bultos_recibidos": 206,
       "kgs_esperados": 1608.86,
@@ -3219,7 +3190,7 @@
       "bultos_mal_estado": 0,
       "bultos_faltantes": 0,
       "tarja_porcentaje": 100,
-      "status": "DESPACHADO_A_ESEER",
+      "status": "EN_PROCESO",
       "dam": "235-26-S6L-047242-66-307",
       "canal_dam": {
         "numero": "2352651084758",
@@ -3332,39 +3303,10 @@
           ]
         },
         "despacho_eseer": {
-          "estado": "COMPLETADO",
-          "fecha_inicio": "2026-05-07T10:17:00-05:00",
-          "fecha_fin": "2026-05-07T12:48:00-05:00",
-          "subeventos": [
-            {
-              "nombre": "Facturacion handling",
-              "fecha": "2026-05-07T10:17:00-05:00",
-              "estado": "COMPLETADO"
-            },
-            {
-              "nombre": "Facturacion traslado postal",
-              "fecha": "2026-05-07T10:55:00-05:00",
-              "estado": "COMPLETADO"
-            },
-            {
-              "nombre": "Ingreso de transportista",
-              "fecha": "2026-05-07T11:44:00-05:00",
-              "estado": "COMPLETADO",
-              "detalle": {
-                "placa": "ZDX-907"
-              }
-            },
-            {
-              "nombre": "Inicio de estiba",
-              "fecha": "2026-05-07T12:18:00-05:00",
-              "estado": "COMPLETADO"
-            },
-            {
-              "nombre": "Entrega de carga",
-              "fecha": "2026-05-07T12:48:00-05:00",
-              "estado": "COMPLETADO"
-            }
-          ]
+          "estado": "PENDIENTE",
+          "fecha_inicio": null,
+          "fecha_fin": null,
+          "subeventos": []
         }
       }
     },
@@ -3406,7 +3348,7 @@
         "fecha_incorporacion_guias": "2026-05-04T05:00:00-05:00"
       },
       "volante": "VOL-2026-91920",
-      "handling_pagado": true,
+      "handling_pagado": false,
       "bultos_esperados": 45,
       "bultos_recibidos": 45,
       "kgs_esperados": 2628.51,
@@ -3414,7 +3356,7 @@
       "bultos_mal_estado": 0,
       "bultos_faltantes": 0,
       "tarja_porcentaje": 100,
-      "status": "DESPACHADO_A_ESEER",
+      "status": "EN_PROCESO",
       "dam": "235-26-S6K-424993-81-579",
       "canal_dam": {
         "numero": "2352651093112",
@@ -3527,39 +3469,10 @@
           ]
         },
         "despacho_eseer": {
-          "estado": "COMPLETADO",
-          "fecha_inicio": "2026-05-07T08:58:00-05:00",
-          "fecha_fin": "2026-05-07T11:28:00-05:00",
-          "subeventos": [
-            {
-              "nombre": "Facturacion handling",
-              "fecha": "2026-05-07T08:58:00-05:00",
-              "estado": "COMPLETADO"
-            },
-            {
-              "nombre": "Facturacion traslado postal",
-              "fecha": "2026-05-07T09:15:00-05:00",
-              "estado": "COMPLETADO"
-            },
-            {
-              "nombre": "Ingreso de transportista",
-              "fecha": "2026-05-07T10:25:00-05:00",
-              "estado": "COMPLETADO",
-              "detalle": {
-                "placa": "QYD-491"
-              }
-            },
-            {
-              "nombre": "Inicio de estiba",
-              "fecha": "2026-05-07T11:00:00-05:00",
-              "estado": "COMPLETADO"
-            },
-            {
-              "nombre": "Entrega de carga",
-              "fecha": "2026-05-07T11:28:00-05:00",
-              "estado": "COMPLETADO"
-            }
-          ]
+          "estado": "PENDIENTE",
+          "fecha_inicio": null,
+          "fecha_fin": null,
+          "subeventos": []
         }
       }
     },
@@ -3601,7 +3514,7 @@
         "fecha_incorporacion_guias": "2026-05-04T05:00:00-05:00"
       },
       "volante": null,
-      "handling_pagado": false,
+      "handling_pagado": true,
       "bultos_esperados": 103,
       "bultos_recibidos": 97,
       "kgs_esperados": 1822.6,
@@ -3774,7 +3687,7 @@
         "fecha_incorporacion_guias": "2026-05-04T05:00:00-05:00"
       },
       "volante": null,
-      "handling_pagado": false,
+      "handling_pagado": true,
       "bultos_esperados": 237,
       "bultos_recibidos": 223,
       "kgs_esperados": 1686.95,
@@ -5920,7 +5833,7 @@
         "fecha_incorporacion_guias": "2026-05-05T22:40:00-05:00"
       },
       "volante": null,
-      "handling_pagado": false,
+      "handling_pagado": true,
       "bultos_esperados": 131,
       "bultos_recibidos": 131,
       "kgs_esperados": 3282.34,
@@ -7692,7 +7605,7 @@
         "fecha_incorporacion_guias": "2026-05-02T03:20:00-05:00"
       },
       "volante": null,
-      "handling_pagado": false,
+      "handling_pagado": true,
       "bultos_esperados": 155,
       "bultos_recibidos": 146,
       "kgs_esperados": 499.92,
@@ -8266,7 +8179,7 @@
         "fecha_incorporacion_guias": "2026-05-02T03:20:00-05:00"
       },
       "volante": null,
-      "handling_pagado": false,
+      "handling_pagado": true,
       "bultos_esperados": 195,
       "bultos_recibidos": 195,
       "kgs_esperados": 1747.18,
@@ -10992,7 +10905,7 @@
         "fecha_incorporacion_guias": "2026-05-03T22:15:00-05:00"
       },
       "volante": null,
-      "handling_pagado": false,
+      "handling_pagado": true,
       "bultos_esperados": 67,
       "bultos_recibidos": 67,
       "kgs_esperados": 2302.89,
@@ -11399,7 +11312,7 @@
         "fecha_incorporacion_guias": "2026-05-03T22:15:00-05:00"
       },
       "volante": null,
-      "handling_pagado": false,
+      "handling_pagado": true,
       "bultos_esperados": 223,
       "bultos_recibidos": 223,
       "kgs_esperados": 1963.31,
@@ -18269,34 +18182,10 @@
           ]
         },
         "despacho_eseer": {
-          "estado": "EN_CURSO",
-          "fecha_inicio": "2026-05-01T08:46:00-05:00",
+          "estado": "PENDIENTE",
+          "fecha_inicio": null,
           "fecha_fin": null,
-          "subeventos": [
-            {
-              "nombre": "Facturacion handling",
-              "fecha": "2026-05-01T08:46:00-05:00",
-              "estado": "COMPLETADO"
-            },
-            {
-              "nombre": "Facturacion traslado postal",
-              "fecha": "2026-05-01T09:17:00-05:00",
-              "estado": "COMPLETADO"
-            },
-            {
-              "nombre": "Ingreso de transportista",
-              "fecha": "2026-05-01T10:27:00-05:00",
-              "estado": "COMPLETADO",
-              "detalle": {
-                "placa": "JZQ-348"
-              }
-            },
-            {
-              "nombre": "Inicio de estiba",
-              "fecha": "2026-05-01T11:00:00-05:00",
-              "estado": "COMPLETADO"
-            }
-          ]
+          "subeventos": []
         }
       }
     },
@@ -21837,7 +21726,7 @@
         "fecha_incorporacion_guias": "2026-05-07T14:45:00-05:00"
       },
       "volante": null,
-      "handling_pagado": false,
+      "handling_pagado": true,
       "bultos_esperados": 220,
       "bultos_recibidos": 0,
       "kgs_esperados": 1466.05,
@@ -21911,7 +21800,7 @@
         "fecha_incorporacion_guias": "2026-05-07T14:45:00-05:00"
       },
       "volante": null,
-      "handling_pagado": false,
+      "handling_pagado": true,
       "bultos_esperados": 90,
       "bultos_recibidos": 0,
       "kgs_esperados": 2554.43,
@@ -21985,7 +21874,7 @@
         "fecha_incorporacion_guias": "2026-05-07T14:45:00-05:00"
       },
       "volante": null,
-      "handling_pagado": false,
+      "handling_pagado": true,
       "bultos_esperados": 220,
       "bultos_recibidos": 0,
       "kgs_esperados": 3290.52,
@@ -22059,7 +21948,7 @@
         "fecha_incorporacion_guias": "2026-05-07T14:45:00-05:00"
       },
       "volante": null,
-      "handling_pagado": false,
+      "handling_pagado": true,
       "bultos_esperados": 140,
       "bultos_recibidos": 0,
       "kgs_esperados": 3265.64,
@@ -22133,7 +22022,7 @@
         "fecha_incorporacion_guias": "2026-05-07T14:45:00-05:00"
       },
       "volante": null,
-      "handling_pagado": false,
+      "handling_pagado": true,
       "bultos_esperados": 185,
       "bultos_recibidos": 0,
       "kgs_esperados": 157.84,
@@ -22207,7 +22096,7 @@
         "fecha_incorporacion_guias": "2026-05-07T14:45:00-05:00"
       },
       "volante": null,
-      "handling_pagado": false,
+      "handling_pagado": true,
       "bultos_esperados": 139,
       "bultos_recibidos": 0,
       "kgs_esperados": 153.38,
@@ -22281,7 +22170,7 @@
         "fecha_incorporacion_guias": "2026-05-07T14:45:00-05:00"
       },
       "volante": null,
-      "handling_pagado": false,
+      "handling_pagado": true,
       "bultos_esperados": 139,
       "bultos_recibidos": 0,
       "kgs_esperados": 563.47,
@@ -22355,7 +22244,7 @@
         "fecha_incorporacion_guias": "2026-05-07T14:45:00-05:00"
       },
       "volante": null,
-      "handling_pagado": false,
+      "handling_pagado": true,
       "bultos_esperados": 68,
       "bultos_recibidos": 0,
       "kgs_esperados": 252.51,
@@ -22429,7 +22318,7 @@
         "fecha_incorporacion_guias": "2026-05-07T04:15:00-05:00"
       },
       "volante": null,
-      "handling_pagado": false,
+      "handling_pagado": true,
       "bultos_esperados": 239,
       "bultos_recibidos": 0,
       "kgs_esperados": 1366.64,
@@ -22503,7 +22392,7 @@
         "fecha_incorporacion_guias": "2026-05-07T04:15:00-05:00"
       },
       "volante": null,
-      "handling_pagado": false,
+      "handling_pagado": true,
       "bultos_esperados": 121,
       "bultos_recibidos": 0,
       "kgs_esperados": 2637.12,
@@ -22577,7 +22466,7 @@
         "fecha_incorporacion_guias": "2026-05-07T04:15:00-05:00"
       },
       "volante": null,
-      "handling_pagado": false,
+      "handling_pagado": true,
       "bultos_esperados": 75,
       "bultos_recibidos": 0,
       "kgs_esperados": 994.11,
@@ -22651,7 +22540,7 @@
         "fecha_incorporacion_guias": "2026-05-07T04:15:00-05:00"
       },
       "volante": null,
-      "handling_pagado": false,
+      "handling_pagado": true,
       "bultos_esperados": 138,
       "bultos_recibidos": 0,
       "kgs_esperados": 3054.62,
@@ -22725,7 +22614,7 @@
         "fecha_incorporacion_guias": "2026-05-07T04:15:00-05:00"
       },
       "volante": null,
-      "handling_pagado": false,
+      "handling_pagado": true,
       "bultos_esperados": 43,
       "bultos_recibidos": 0,
       "kgs_esperados": 2307,
@@ -22799,7 +22688,7 @@
         "fecha_incorporacion_guias": "2026-05-07T04:15:00-05:00"
       },
       "volante": null,
-      "handling_pagado": false,
+      "handling_pagado": true,
       "bultos_esperados": 92,
       "bultos_recibidos": 0,
       "kgs_esperados": 294.21,
@@ -22873,7 +22762,7 @@
         "fecha_incorporacion_guias": "2026-05-07T04:15:00-05:00"
       },
       "volante": null,
-      "handling_pagado": false,
+      "handling_pagado": true,
       "bultos_esperados": 174,
       "bultos_recibidos": 0,
       "kgs_esperados": 3282.14,
@@ -22947,7 +22836,7 @@
         "fecha_incorporacion_guias": "2026-05-07T04:15:00-05:00"
       },
       "volante": null,
-      "handling_pagado": false,
+      "handling_pagado": true,
       "bultos_esperados": 97,
       "bultos_recibidos": 0,
       "kgs_esperados": 2877.92,

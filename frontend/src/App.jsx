@@ -3,21 +3,22 @@ import Sidebar from './components/layout/Sidebar.jsx';
 import AvanceVuelos from './pages/AvanceVuelos.jsx';
 import DetalleVuelo from './pages/DetalleVuelo.jsx';
 import DetalleAWB from './pages/DetalleAWB.jsx';
-import Inventario from './pages/Inventario.jsx';
+import { InventarioModalProvider } from './context/InventarioModalContext.jsx';
 
 export default function App() {
   return (
-    <div className="flex h-full">
-      <Sidebar />
-      <main className="flex-1 overflow-auto">
-        <Routes>
-          <Route path="/" element={<Navigate to="/vuelos" replace />} />
-          <Route path="/vuelos" element={<AvanceVuelos />} />
-          <Route path="/vuelos/:manifiesto" element={<DetalleVuelo />} />
-          <Route path="/awb/:id" element={<DetalleAWB />} />
-          <Route path="/inventario" element={<Inventario />} />
-        </Routes>
-      </main>
-    </div>
+    <InventarioModalProvider>
+      <div className="flex h-full">
+        <Sidebar />
+        <main className="flex-1 overflow-auto">
+          <Routes>
+            <Route path="/" element={<Navigate to="/vuelos" replace />} />
+            <Route path="/vuelos" element={<AvanceVuelos />} />
+            <Route path="/vuelos/:manifiesto" element={<DetalleVuelo />} />
+            <Route path="/awb/:id" element={<DetalleAWB />} />
+          </Routes>
+        </main>
+      </div>
+    </InventarioModalProvider>
   );
 }

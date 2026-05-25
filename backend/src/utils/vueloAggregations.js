@@ -33,16 +33,34 @@ const ETAPAS = [
 ];
 
 function calcularTrazabilidad(awbs) {
-  // Excluir guias faltantes del denominador: no podran pasar por el proceso,
-  // por lo que distorcionarian el avance del vuelo.
+  // Trasmision Aerolinea cubre TODAS las guias manifestadas: la aerolinea las
+  // incorpora al manifiesto antes del vuelo y en ese punto aun no se sabe cuales
+  // arribaran. Por eso los faltantes SI cuentan aqui (11/11), y recien al
+  // "cerrarse" la recepcion salen del denominador.
+  const totalManifestadas = awbs.length;
+
+  // De Recepcion en adelante los faltantes se excluyen: nunca llegaron al
+  // almacen, no participan del resto del proceso y distorsionarian el avance.
   const efectivos = awbs.filter((a) => a.status !== 'GUIA_FALTANTE');
-  const total = efectivos.length;
-  return ETAPAS.map((etapa) => ({
-    key: etapa.key,
-    label: etapa.label,
-    completados: efectivos.filter(etapa.test).length,
-    total,
-  }));
+  const totalEfectivos = efectivos.length;
+
+  return ETAPAS.map((etapa) => {
+    if (etapa.key === 'aerolinea') {
+      // pasoAerolinea() es true para toda guia manifestada (incluye faltantes).
+      return {
+        key: etapa.key,
+        label: etapa.label,
+        completados: awbs.filter(etapa.test).length,
+        total: totalManifestadas,
+      };
+    }
+    return {
+      key: etapa.key,
+      label: etapa.label,
+      completados: efectivos.filter(etapa.test).length,
+      total: totalEfectivos,
+    };
+  });
 }
 
 const SLA_THRESHOLD_MIN = 5 * 60 + 30; // 5h 30m

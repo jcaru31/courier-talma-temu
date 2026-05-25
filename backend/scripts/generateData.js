@@ -527,10 +527,6 @@ function generarAwb(i, escenario, alertasOut, vueloShared) {
   // de esta rama llegaron a almacenamiento, incluido INMOVILIZACION).
   const damAsignada = true;
 
-  // handling_pagado: las guias despachadas pagaron handling; las que siguen en
-  // proceso pueden no haberlo pagado (gatilla la alerta de handling).
-  const handlingPagado = escenario === 'DESPACHADO_A_ESEER' ? true : RND.bool(0.7);
-
   // volante: se emite en el hito de transmisiones (subevento "Emision de volante").
   // Si la guia aun no llego a ese punto no tiene volante: queda bloqueada
   // documentariamente hasta que la aerolinea/aduanas lo emita.
@@ -538,6 +534,24 @@ function generarAwb(i, escenario, alertasOut, vueloShared) {
     (s) => /volante/i.test(s.nombre) && s.estado === 'COMPLETADO'
   );
   const volante = volanteEmitido ? `VOL-2026-${pad(RND.int(1, 99999), 5)}` : null;
+
+  // Transmision Almacen completa = descarga de mercancia transmitida + volante
+  // emitido. El pago de handling es el paso siguiente del flujo, asi que la
+  // falta de pago solo tiene sentido (y recien ahi frena el despacho) cuando
+  // este hito ya cerro.
+  const descargaTransmitida = (tAduanas.subeventos || []).some(
+    (s) => /descarga/i.test(s.nombre) && s.estado === 'COMPLETADO'
+  );
+  const transmisionAlmacenCompleta = volanteEmitido && descargaTransmitida;
+
+  // handling_pagado: las guias despachadas pagaron handling; las que ya cerraron
+  // Transmision Almacen pueden no haberlo pagado (gatilla la alerta de handling
+  // y bloquea el despacho). Si la guia aun no llego a esa etapa NO puede figurar
+  // como impaga: handling todavia no es exigible.
+  const handlingPagado =
+    escenario === 'DESPACHADO_A_ESEER' || !transmisionAlmacenCompleta
+      ? true
+      : RND.bool(0.7);
 
   return {
     id,

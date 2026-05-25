@@ -1,11 +1,14 @@
+import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAwbDetail } from '../hooks/useAwbDetail.js';
 import AwbDetalleContenido from '../components/detalle/AwbDetalleContenido.jsx';
+import ServiciosIntermediosModal from '../components/detalle/ServiciosIntermediosModal.jsx';
 
 export default function DetalleAWB() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { awb, loading, error, refetch } = useAwbDetail(id);
+  const [serviciosAbierto, setServiciosAbierto] = useState(false);
 
   const volverAlVuelo = () => {
     if (awb?.manifiesto) {
@@ -44,12 +47,20 @@ export default function DetalleAWB() {
             Descargar
             <IconDownload />
           </button>
-          <button className="flex items-center gap-2 px-4 py-2 border border-navy text-navy rounded-md text-sm font-medium hover:bg-blue-50">
+          <button
+            onClick={() => setServiciosAbierto(true)}
+            disabled={!awb}
+            className="flex items-center gap-2 px-4 py-2 border border-navy text-navy rounded-md text-sm font-medium hover:bg-blue-50 disabled:opacity-50"
+          >
             Servicios intermedios
             <IconExternal />
           </button>
         </div>
       </div>
+
+      {serviciosAbierto && awb && (
+        <ServiciosIntermediosModal awb={awb} onClose={() => setServiciosAbierto(false)} />
+      )}
 
       {/* Content */}
       {loading && (

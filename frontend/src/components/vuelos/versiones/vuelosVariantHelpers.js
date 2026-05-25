@@ -72,6 +72,31 @@ export function countdownArribo(v) {
   return h > 0 ? `Llega en ${h}h ${String(m).padStart(2, '0')}m` : `Llega en ${m}m`;
 }
 
+/**
+ * Tono de cada hito de la trazabilidad. UNA sola regla para que la barra del
+ * card (lista) y la gráfica del detalle siempre cuadren, y para que un hito NO
+ * se pinte "en curso" si todavía no arrancó (p. ej. vuelo en el aire → la
+ * recepción aún no inicia).
+ *
+ * Un hito está "iniciado" cuando realmente empezó a trabajarse:
+ *   - Trasmisión Aerolínea (idx 0): siempre (el manifiesto ya se numeró).
+ *   - Recepción (idx 1): cuando llega carga al almacén (bultosRecibidos > 0).
+ *   - Resto: cuando el hito anterior ya tiene al menos una guía completada.
+ *
+ * @param {number[]} completados  guías que pasaron cada hito (orden de los 5 hitos)
+ * @param {number}   total        guías recibidas (denominador, sin faltantes)
+ * @param {number}   bultosRecibidos  bultos recibidos del vuelo
+ * @returns {('verde'|'amarillo'|'gris')[]}
+ */
+export function tonoHitos(completados, total, bultosRecibidos) {
+  return completados.map((c, i) => {
+    if (i === 0) return 'verde'; // aerolínea: manifiesto numerado, siempre completo
+    if (total > 0 && c >= total) return 'verde'; // todas las recibidas lo pasaron
+    const iniciado = i === 1 ? (bultosRecibidos || 0) > 0 : completados[i - 1] > 0;
+    return iniciado ? 'amarillo' : 'gris';
+  });
+}
+
 // --- Progreso de hitos ----------------------------------------------------
 // Devuelve el avance global del vuelo a partir de la trazabilidad: cuántos
 // hitos están completos y el % de guías que pasaron el último hito alcanzado.

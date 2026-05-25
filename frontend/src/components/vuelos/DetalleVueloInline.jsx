@@ -1,6 +1,7 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useVueloDetail } from '../../hooks/useVuelos.js';
 import GuiasSimpleTable from './GuiasSimpleTable.jsx';
+import DetalleVueloHeader from './DetalleVueloHeader.jsx';
 import AwbDetalleModal from '../detalle/AwbDetalleModal.jsx';
 
 /**
@@ -10,12 +11,17 @@ import AwbDetalleModal from '../detalle/AwbDetalleModal.jsx';
  * (sus hitos y alertas son los controles). Solo añade una franja delgada con
  * los totales de bultos/kilos del vuelo.
  */
-// Estado de la guía cuando está trabajando ese hito (modelo "hito en curso").
-const ETAPA_A_TRACKING = {
-  recepcion: 'MANIFESTADO',
-  transmisiones: 'TRANSMISIONES',
-  facturacion: 'FACTURACION',
-  despacho: 'DESPACHO',
+// Grupo de estados (estado_tracking) por cada nodo seleccionable. El nodo
+// representa "el estado en que se encuentra la guía", así que filtrar por él
+// trae exactamente las guías en ese estado — sin importar si el hito está
+// completo o pendiente. Las faltantes NO entran en Recepción (nunca arribaron:
+// quedaron en Trasmisión Aerolínea); se filtran por su propia alerta.
+// Debe coincidir con el conteo de los nodos de la trazabilidad.
+const ETAPA_A_ESTADOS = {
+  recepcion: ['MANIFESTADO'],
+  transmisiones: ['TRANSMISIONES'],
+  facturacion: ['FACTURACION'],
+  despacho: ['DESPACHO'],
 };
 
 const LABEL_ETAPA = {
@@ -30,24 +36,38 @@ const LABEL_ALERTA = {
   parciales: 'Parciales',
   inmov: 'Inmovilizadas',
   mal_estado: 'Mal estado',
+  handling: 'Pago handling pendiente',
 };
 
 export default function DetalleVueloInline({
   manifiesto,
-  etapaActiva = null,
-  alertaActiva = null,
+  etapaActiva: etapaProp = null,
+  alertaActiva: alertaProp = null,
   prefilterQuery = '',
   fillHeight = false,
+  withHeader = false,
 }) {
   const { vuelo, loading, error } = useVueloDetail(manifiesto);
   const [awbSeleccionado, setAwbSeleccionado] = useState(null);
 
+  // Con `withHeader` (vista Split) el detalle gestiona sus propios filtros: el
+  // encabezado (hitos + alertas) es el control. Sin él, los recibe por props
+  // desde la fila (vista clásica). Al cambiar de vuelo, se limpian.
+  const [etapaInt, setEtapaInt] = useState(null);
+  const [alertaInt, setAlertaInt] = useState(null);
+  useEffect(() => { setEtapaInt(null); setAlertaInt(null); }, [manifiesto]);
+
+  const etapaActiva = withHeader ? etapaInt : etapaProp;
+  const alertaActiva = withHeader ? alertaInt : alertaProp;
+  const onEtapa = (key) => { setEtapaInt(key); if (key) setAlertaInt(null); };
+  const onAlerta = (tipo) => { setAlertaInt(tipo); if (tipo) setEtapaInt(null); };
+
   const awbsFiltrados = useMemo(() => {
     if (!vuelo?.awbs) return [];
     let lista = vuelo.awbs;
-    if (etapaActiva) {
-      const trackingObjetivo = ETAPA_A_TRACKING[etapaActiva];
-      lista = lista.filter((a) => a.estado_tracking === trackingObjetivo);
+    if (etapaActiva && ETAPA_A_ESTADOS[etapaActiva]) {
+      const objetivos = ETAPA_A_ESTADOS[etapaActiva];
+      lista = lista.filter((a) => objetivos.includes(a.estado_tracking));
     } else if (alertaActiva === 'faltantes') {
       lista = lista.filter((a) => a.status === 'GUIA_FALTANTE');
     } else if (alertaActiva === 'parciales') {
@@ -56,6 +76,8 @@ export default function DetalleVueloInline({
       lista = lista.filter((a) => a.canal_dam?.color === 'ROJO' && a.canal_dam?.con_levante === false);
     } else if (alertaActiva === 'mal_estado') {
       lista = lista.filter((a) => (a.bultos_mal_estado || 0) > 0);
+    } else if (alertaActiva === 'handling') {
+      lista = lista.filter((a) => a.handling_pagado === false);
     }
     return lista;
   }, [vuelo, etapaActiva, alertaActiva]);
@@ -88,44 +110,55 @@ export default function DetalleVueloInline({
 
   return (
     <div className={fillHeight ? 'flex flex-col gap-3 h-full min-h-0' : 'space-y-3'}>
-      {/* Franja resumen: totales de carga + handling + guías entregadas */}
-      <div className={`card px-4 py-2.5 flex items-center gap-x-7 gap-y-1.5 flex-wrap ${fillHeight ? 'shrink-0' : ''}`}>
-        <span className="text-[10px] uppercase tracking-wider text-muted font-bold">
-          Resumen del vuelo
-        </span>
-        <Metric label="Bultos" rec={vuelo.bultos_recibidos} man={vuelo.bultos_esperados} />
-        <Metric
-          label="Kilos"
-          rec={formatKg(vuelo.kgs_recibidos)}
-          man={formatKg(vuelo.kgs_esperados)}
+      {withHeader ? (
+        /* Vista Split: encabezado optimizado con hitos + alertas como filtros */
+        <DetalleVueloHeader
+          vuelo={vuelo}
+          etapaActiva={etapaActiva}
+          alertaActiva={alertaActiva}
+          onEtapa={onEtapa}
+          onAlerta={onAlerta}
         />
-
-        <div className="ml-auto flex items-center gap-2.5 flex-wrap">
-          {handlingPendientes > 0 && (
-            <span
-              className="inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider bg-fuchsia-50 border border-fuchsia-300 text-fuchsia-700 px-2 py-1 rounded-md"
-              title="Guías con Handling pendiente de pago"
-            >
-              <IconHandling />
-              {handlingPendientes} {handlingPendientes === 1 ? 'guía' : 'guías'} sin pago Handling
-            </span>
-          )}
-          <span
-            className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md border text-[12px] font-bold ${
-              entregadas > 0
-                ? 'bg-emerald-50 border-ok text-ok'
-                : 'bg-slate-50 border-slate-300 text-slate-400'
-            }`}
-            title="Guías con entrega de carga registrada"
-          >
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round">
-              <polyline points="20 6 9 17 4 12" />
-            </svg>
-            <span className="tabular-nums">{entregadas} / {totalGuias}</span>
-            <span className="text-[10px] uppercase tracking-wider">guías entregadas</span>
+      ) : (
+        /* Vista clásica: franja resumen (los controles viven en la fila) */
+        <div className={`card px-4 py-2.5 flex items-center gap-x-7 gap-y-1.5 flex-wrap ${fillHeight ? 'shrink-0' : ''}`}>
+          <span className="text-[10px] uppercase tracking-wider text-muted font-bold">
+            Resumen del vuelo
           </span>
+          <Metric label="Bultos" rec={vuelo.bultos_recibidos} man={vuelo.bultos_esperados} />
+          <Metric
+            label="Kilos"
+            rec={formatKg(vuelo.kgs_recibidos)}
+            man={formatKg(vuelo.kgs_esperados)}
+          />
+
+          <div className="ml-auto flex items-center gap-2.5 flex-wrap">
+            {handlingPendientes > 0 && (
+              <span
+                className="inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider bg-fuchsia-50 border border-fuchsia-300 text-fuchsia-700 px-2 py-1 rounded-md"
+                title="Guías con Handling pendiente de pago"
+              >
+                <IconHandling />
+                {handlingPendientes} {handlingPendientes === 1 ? 'guía' : 'guías'} sin pago Handling
+              </span>
+            )}
+            <span
+              className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md border text-[12px] font-bold ${
+                entregadas > 0
+                  ? 'bg-emerald-50 border-ok text-ok'
+                  : 'bg-slate-50 border-slate-300 text-slate-400'
+              }`}
+              title="Guías con entrega de carga registrada"
+            >
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="20 6 9 17 4 12" />
+              </svg>
+              <span className="tabular-nums">{entregadas} / {totalGuias}</span>
+              <span className="text-[10px] uppercase tracking-wider">guías entregadas</span>
+            </span>
+          </div>
         </div>
-      </div>
+      )}
 
       <GuiasSimpleTable
         awbs={awbsFiltrados}

@@ -14,23 +14,23 @@ export function IconoAlerta({ tipo, size = 14 }) {
   }
 }
 
-// Faltante — signo de interrogación (la guía manifestada no arribó).
+// Faltante — solo el signo de interrogación (sin círculo ni cuadro): la guía
+// manifestada no arribó al terminal.
 function IconFaltante({ size }) {
   return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <circle cx="12" cy="12" r="10" />
-      <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
-      <path d="M12 17h.01" />
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M8.5 8.5a3.5 3.5 0 1 1 5.5 2.9c-1 .7-2 1.3-2 2.6" />
+      <line x1="12" y1="18.5" x2="12.01" y2="18.5" />
     </svg>
   );
 }
 
-// Parcial — círculo a media carga (faltan bultos).
+// Parcial — círculo pintado a la mitad (arribó con menos bultos de lo manifestado).
 function IconParcial({ size }) {
   return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-      <circle cx="12" cy="12" r="9" />
-      <path d="M12 3a9 9 0 0 1 0 18Z" fill="currentColor" stroke="none" />
+    <svg width={size} height={size} viewBox="0 0 24 24">
+      <circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" strokeWidth="2" />
+      <path d="M12 3a9 9 0 0 1 0 18z" fill="currentColor" />
     </svg>
   );
 }
@@ -44,11 +44,12 @@ function IconInmov({ size }) {
   );
 }
 
-// Mal estado — triángulo de advertencia.
+// Mal estado — una X grande.
 function IconMalEstado({ size }) {
   return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor">
-      <path d="M12 2 1 21h22L12 2zm0 6 6 11H6l6-11zm-1 4v3h2v-3h-2zm0 4v2h2v-2h-2z" />
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+      <line x1="5" y1="5" x2="19" y2="19" />
+      <line x1="19" y1="5" x2="5" y2="19" />
     </svg>
   );
 }

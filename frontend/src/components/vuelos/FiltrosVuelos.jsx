@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 
 const OPCIONES_DIA = [
   { value: '', label: 'Últimos 7 días (hoy + 7 atrás)' },
@@ -25,11 +26,44 @@ const OPCIONES_ALERTA = [
 
 export default function FiltrosVuelos({ filtros, onChange, iconOnly = false }) {
   const [open, setOpen] = useState(false);
-  const ref = useRef(null);
+  const [pos, setPos] = useState(null);
+  const triggerRef = useRef(null);
+  const panelRef = useRef(null);
+
+  // El panel se monta en un portal (position: fixed) para que NO lo recorte el
+  // contenedor de la lista de vuelos (que tiene overflow oculto/scroll). La
+  // posición se calcula a partir del botón disparador.
+  const PANEL_W = 320;
+  const calcularPos = () => {
+    const r = triggerRef.current?.getBoundingClientRect();
+    if (!r) return;
+    const left = iconOnly
+      ? Math.min(Math.max(8, r.right - PANEL_W), window.innerWidth - PANEL_W - 8)
+      : Math.min(r.left, window.innerWidth - PANEL_W - 8);
+    setPos({ top: r.bottom + 8, left });
+  };
+
+  useLayoutEffect(() => {
+    if (!open) return;
+    calcularPos();
+    const onWin = () => calcularPos();
+    window.addEventListener('resize', onWin);
+    window.addEventListener('scroll', onWin, true);
+    return () => {
+      window.removeEventListener('resize', onWin);
+      window.removeEventListener('scroll', onWin, true);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
 
   useEffect(() => {
     function onClickOut(e) {
-      if (ref.current && !ref.current.contains(e.target)) setOpen(false);
+      if (
+        triggerRef.current && !triggerRef.current.contains(e.target) &&
+        panelRef.current && !panelRef.current.contains(e.target)
+      ) {
+        setOpen(false);
+      }
     }
     document.addEventListener('mousedown', onClickOut);
     return () => document.removeEventListener('mousedown', onClickOut);
@@ -54,9 +88,10 @@ export default function FiltrosVuelos({ filtros, onChange, iconOnly = false }) {
   const tieneRangoCustom = filtros.fecha_desde || filtros.fecha_hasta;
 
   return (
-    <div className="relative" ref={ref}>
+    <div className="relative">
       {iconOnly ? (
         <button
+          ref={triggerRef}
           onClick={() => setOpen((o) => !o)}
           title="Filtros"
           className={`relative flex items-center justify-center w-9 h-9 border rounded-md transition shrink-0 ${
@@ -72,6 +107,7 @@ export default function FiltrosVuelos({ filtros, onChange, iconOnly = false }) {
         </button>
       ) : (
         <button
+          ref={triggerRef}
           onClick={() => setOpen((o) => !o)}
           className={`flex items-center gap-2 px-4 py-2 border rounded-md text-sm font-medium transition ${
             tieneFiltros
@@ -85,8 +121,12 @@ export default function FiltrosVuelos({ filtros, onChange, iconOnly = false }) {
         </button>
       )}
 
-      {open && (
-        <div className={`absolute mt-2 w-80 bg-white border border-border rounded-md shadow-lg z-20 p-4 space-y-3 ${iconOnly ? 'right-0' : 'left-0'}`}>
+      {open && pos && createPortal(
+        <div
+          ref={panelRef}
+          style={{ position: 'fixed', top: pos.top, left: pos.left, width: PANEL_W }}
+          className="bg-white border border-border rounded-md shadow-xl z-[60] p-4 space-y-3"
+        >
           <Select
             label="Día"
             value={filtros.dia || ''}
@@ -134,7 +174,8 @@ export default function FiltrosVuelos({ filtros, onChange, iconOnly = false }) {
               Limpiar filtros
             </button>
           )}
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

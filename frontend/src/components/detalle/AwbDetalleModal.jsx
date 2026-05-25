@@ -42,29 +42,25 @@ export default function AwbDetalleModal({ awbId, onClose }) {
 
       {/* Panel lateral derecho */}
       <div
-        className={`absolute top-0 right-0 h-full w-full sm:w-[88%] lg:w-[82%] xl:w-[1400px] max-w-full bg-slate-50 shadow-2xl flex flex-col transform transition-transform duration-250 ease-out ${
+        className={`absolute top-0 right-0 h-full w-full sm:w-[440px] md:w-[560px] lg:w-[680px] max-w-full bg-slate-50 shadow-2xl flex flex-col transform transition-transform duration-250 ease-out ${
           visible ? 'translate-x-0' : 'translate-x-full'
         }`}
       >
-        {/* Header sticky */}
-        <div className="sticky top-0 z-10 bg-white border-b border-border px-5 py-3 flex items-center gap-3">
-          <h2 className="text-base font-semibold text-slate-700">
-            Tracking Importaciones
-            {awb?.awb && <span className="text-slate-400 font-normal"> — {awb.awb}</span>}
-          </h2>
-          <div className="ml-auto flex items-center gap-2">
-            <button className="flex items-center gap-1.5 px-3 py-1.5 border border-ok text-ok rounded-md text-[12px] font-medium hover:bg-emerald-50">
-              Enviar por correo <IconSend />
-            </button>
-            <button className="flex items-center gap-1.5 px-3 py-1.5 border border-border text-slate-700 rounded-md text-[12px] font-medium hover:bg-slate-50">
-              Descargar <IconDownload />
-            </button>
-            <button className="flex items-center gap-1.5 px-3 py-1.5 border border-navy text-navy rounded-md text-[12px] font-medium hover:bg-blue-50">
-              Servicios intermedios <IconExternal />
-            </button>
+        {/* Header sticky compacto */}
+        <div className="sticky top-0 z-10 bg-white border-b border-border px-4 py-3">
+          {/* Fila 1: título + cerrar */}
+          <div className="flex items-start gap-2">
+            <div className="min-w-0">
+              <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                Tracking Importaciones
+              </div>
+              <h2 className="text-lg font-bold text-slate-800 tabular-nums leading-tight truncate">
+                {awb?.awb || '—'}
+              </h2>
+            </div>
             <button
               onClick={cerrar}
-              className="w-8 h-8 rounded-md hover:bg-slate-100 flex items-center justify-center text-slate-500"
+              className="ml-auto shrink-0 w-8 h-8 rounded-md hover:bg-slate-100 flex items-center justify-center text-slate-500"
               aria-label="Cerrar"
             >
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
@@ -76,7 +72,7 @@ export default function AwbDetalleModal({ awbId, onClose }) {
         </div>
 
         {/* Cuerpo scrollable */}
-        <div className="flex-1 overflow-y-auto p-5">
+        <div className="flex-1 overflow-y-auto p-4">
           {loading && <div className="card p-12 text-center text-muted">Cargando detalle...</div>}
           {error && <div className="card p-4 border-danger text-danger text-sm">Error: {error}</div>}
           {awb && <AwbDetalleContenido awb={awb} onRefetch={refetch} />}
@@ -86,25 +82,3 @@ export default function AwbDetalleModal({ awbId, onClose }) {
   );
 }
 
-function IconSend() {
-  return (
-    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-      <line x1="22" y1="2" x2="11" y2="13" />
-      <polygon points="22 2 15 22 11 13 2 9 22 2" />
-    </svg>
-  );
-}
-function IconDownload() {
-  return (
-    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3" />
-    </svg>
-  );
-}
-function IconExternal() {
-  return (
-    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M7 17l9-9M17 17V8H8" />
-    </svg>
-  );
-}
