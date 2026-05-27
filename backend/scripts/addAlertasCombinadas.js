@@ -13,10 +13,19 @@
  *   mal estado + inmovilización
  *   parcial  + inmovilización
  *   parcial  + mal estado
+ *   parcial + handling pendiente
+ *   mal estado + handling pendiente
+ *   parcial + mal estado + handling pendiente
  *
- * Correr DESPUÉS de generateData / addConsignatarios y ANTES (o re-correr
- * después) de addActasMalEstado, para que las guías que quedan con
- * bultos_mal_estado > 0 reciban su acta.
+ * Las guías combinadas se UBICAN en el hito FACTURACIÓN (volante emitido,
+ * handling pendiente o en curso). Esto refleja el flujo real: las alertas se
+ * detectan en almacén (tarja / canal) DESPUÉS del volante, y la guía queda
+ * trabada en facturación hasta que se resuelve. Por las reglas A y E del
+ * normalizador, INMOV solo es válido con volante emitido y bloquea Despacho.
+ *
+ * Correr DESPUÉS de generateData / addConsignatarios / seedEscenariosIntermedios,
+ * y ANTES (o re-correr después) de addActasMalEstado, para que las guías que
+ * quedan con bultos_mal_estado > 0 reciban su acta.
  *
  * Uso:  node scripts/addAlertasCombinadas.js
  */
@@ -26,16 +35,22 @@ const path = require('path');
 const FILE = path.join(__dirname, '..', 'data', 'courier_data.json');
 
 // Catálogo de combinaciones a repartir (cumple la regla: nunca faltante con
-// otra cosa).
+// otra cosa). Cada combo puede incluir 'handling' para marcar la guía con
+// pago de handling pendiente — eso la mantiene anclada en FACTURACIÓN.
 const COMBOS = [
   ['parcial', 'mal_estado', 'inmov'],
   ['mal_estado', 'inmov'],
   ['parcial', 'inmov'],
   ['parcial', 'mal_estado'],
+  ['parcial', 'mal_estado', 'handling'],
+  ['mal_estado', 'handling'],
+  ['parcial', 'handling'],
+  ['inmov', 'handling'],
 ];
 
 // Cuántas guías combinadas por vuelo (se reparten entre los vuelos elegibles).
-const POR_VUELO = 2;
+// Más densidad = más oportunidad de ver combinaciones reales en pantalla.
+const POR_VUELO = 5;
 
 const MOTIVOS_MAL_ESTADO = [
   'Bultos con embalaje roto y signos de manipulación previa',
@@ -63,13 +78,13 @@ function numActa(prefix, id) {
   return `${prefix}-2026-${pad(hash(prefix + id) % 100000, 5)}`;
 }
 
-// --- construcción de timeline "atascada en aduanas" ---------------------
-// Todas las combinaciones implican una guía que arribó pero quedó retenida
-// (mal estado / inmovilización) o parcial: en la práctica no ha pasado el hito
-// de transmisión (volante pendiente). Reconstruimos un timeline
-// coherente: recepción + tarja + almacén COMPLETADO, aduanas EN_CURSO con la
-// retención activa, despacho PENDIENTE.
-function buildTimeline(eta, { bultos, kgs, canal, diferencias, retencion }) {
+// --- construcción de timeline "atascada en facturación" -----------------
+// Todas las combinaciones implican una guía que ya pasó Trasmisión Almacén
+// (volante emitido) pero quedó trabada en Facturación con alguna alerta
+// activa (canal rojo, mal estado, parcial y/o handling impago). Reconstruimos
+// un timeline coherente: recepción + tarja + almacén + aduanas COMPLETADO,
+// despacho_eseer EN_CURSO con handling pendiente.
+function buildTimeline(eta, { bultos, kgs, canal, diferencias, retencion, handlingPendiente }) {
   const tRec0 = addMin(eta, 20);
   const tRec2 = addMin(tRec0, 40);
   const tTar0 = addMin(tRec2, 15);
@@ -77,18 +92,34 @@ function buildTimeline(eta, { bultos, kgs, canal, diferencias, retencion }) {
   const tAlm0 = addMin(tTar2, 15);
   const tAlm2 = addMin(tAlm0, 60);
   const tAdu0 = addMin(tAlm2, 20);
-  const tAduRet = addMin(tAdu0, 120);
+  const tVol = addMin(tAdu0, 90);
+  const tAviso = addMin(tVol, 10);
+  const tAduRet = addMin(tAviso, 30);
+  const tFact0 = addMin(tAviso, 60);
 
-  // Descarga transmitida; volante y aviso de llegada aún pendientes (la guía
-  // quedó retenida antes de emitirse el volante).
+  // Descarga + volante + aviso de llegada todos COMPLETADOS. Si hay
+  // inmovilización, se añade como sub-evento ACTIVA (canal rojo posterior al
+  // volante: aduanas retuvo la carga cuando ya estaba lista para liberar).
   const aduanasSubs = [
     { nombre: 'Transmision de descarga de mercancia', fecha: isoOffset(tAdu0), estado: 'COMPLETADO' },
-    { nombre: 'Emision de volante', fecha: null, estado: 'PENDIENTE' },
-    { nombre: 'Aviso de llegada', fecha: null, estado: 'PENDIENTE' },
+    { nombre: 'Emision de volante', fecha: isoOffset(tVol), estado: 'COMPLETADO' },
+    { nombre: 'Aviso de llegada', fecha: isoOffset(tAviso), estado: 'COMPLETADO' },
   ];
   if (retencion === 'inmov') {
     aduanasSubs.push({ nombre: 'Inmovilizacion canal rojo sin levante', fecha: isoOffset(tAduRet), estado: 'ACTIVA' });
   }
+
+  // Despacho: handling EN_CURSO (gestionándose) o PENDIENTE si está impago.
+  // Nunca COMPLETADO: si lo fuera, la guía saltaría a estado_tracking
+  // DESPACHO y dejaría de ser una guía "en facturación con alertas".
+  const despachoSubs = [
+    {
+      nombre: 'Facturacion handling',
+      fecha: null,
+      estado: handlingPendiente ? 'PENDIENTE' : 'EN_CURSO',
+    },
+    { nombre: 'Facturacion traslado postal', fecha: null, estado: 'PENDIENTE' },
+  ];
 
   return {
     recepcion: {
@@ -116,10 +147,13 @@ function buildTimeline(eta, { bultos, kgs, canal, diferencias, retencion }) {
       ],
     },
     aduanas: {
-      estado: 'EN_CURSO', fecha_inicio: isoOffset(tAdu0), fecha_fin: null,
+      estado: 'COMPLETADO', fecha_inicio: isoOffset(tAdu0), fecha_fin: isoOffset(tAviso),
       subeventos: aduanasSubs,
     },
-    despacho_eseer: { estado: 'PENDIENTE', fecha_inicio: null, fecha_fin: null, subeventos: [] },
+    despacho_eseer: {
+      estado: 'EN_CURSO', fecha_inicio: isoOffset(tFact0), fecha_fin: null,
+      subeventos: despachoSubs,
+    },
   };
 }
 
@@ -128,6 +162,7 @@ function aplicarCombo(awb, combo, alertas, eta) {
   const tieneParcial = combo.includes('parcial');
   const tieneMal = combo.includes('mal_estado');
   const retencion = combo.includes('inmov') ? 'inmov' : null;
+  const handlingPendiente = combo.includes('handling');
 
   // Baseline limpio: arribó completa.
   const esperados = awb.bultos_esperados;
@@ -161,7 +196,10 @@ function aplicarCombo(awb, combo, alertas, eta) {
   awb.bultos_mal_estado = malEstado;
   awb.tarja_porcentaje = esperados > 0 ? Math.round((recibidos / esperados) * 100) : 0;
   awb.status = 'EN_PROCESO';
-  awb.volante = null; // aún no se emite (retenida antes del volante)
+  // El volante YA se emitió (la guía está en facturación). Un placeholder
+  // determinístico sirve para que aparezca en la UI sin chocar con datos reales.
+  awb.volante = `VOL-2026-${pad(hash('vol' + awb.id) % 100000, 5)}`;
+  awb.handling_pagado = !handlingPendiente;
   awb.canal_dam = {
     ...(awb.canal_dam || {}),
     color: canalColor,
@@ -204,7 +242,7 @@ function aplicarCombo(awb, combo, alertas, eta) {
   alertas.push(...nuevas);
   awb.alertas_activas_ids = nuevas.map((a) => a.id);
   awb.timeline = buildTimeline(new Date(awb.eta), {
-    bultos: esperados, kgs: kgsRec, canal: canalColor, diferencias, retencion,
+    bultos: esperados, kgs: kgsRec, canal: canalColor, diferencias, retencion, handlingPendiente,
   });
 }
 

@@ -1,10 +1,27 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import DetalleVueloInline from '../DetalleVueloInline.jsx';
 import ManifiestoModal from '../ManifiestoModal.jsx';
 import FiltrosVuelos from '../FiltrosVuelos.jsx';
 import TooltipVueloRuta from '../TooltipVueloRuta.jsx';
+import RichTooltipTrigger from '../RichTooltip.jsx';
+import { IconoAlerta } from '../alertaIconos.jsx';
 import { totalAlertas, countdownArribo, tonoHitos } from './vuelosVariantHelpers.js';
+
+const HITO_LABEL_LARGO = {
+  aerolinea:     'Trasmisión Aerolínea',
+  recepcion:     'Recepción',
+  transmisiones: 'Trasmisión Almacén',
+  facturacion:   'Facturación',
+  despacho:      'Despacho',
+};
+
+const ALERTA_INFO = {
+  faltantes:  { key: 'guias_faltantes',     label: 'Faltantes',   desc: 'Manifestadas que no arribaron al terminal.', cls: 'text-slate-300' },
+  inmov:      { key: 'guias_con_inmov',     label: 'Inmovilizadas', desc: 'Sin autorización de salida: requiere levante.', cls: 'text-orange-300' },
+  mal_estado: { key: 'guias_con_mal_estado', label: 'Mal estado',  desc: 'Bultos con daño reportado en acta.', cls: 'text-red-300' },
+  parciales:  { key: 'guias_parciales',     label: 'Parciales',   desc: 'Arribaron con menos bultos de lo manifestado.', cls: 'text-amber-300' },
+};
 
 /**
  * VARIANTE 2 — Master-detail (split pane).
@@ -14,7 +31,16 @@ import { totalAlertas, countdownArribo, tonoHitos } from './vuelosVariantHelpers
  * estimada con cuenta regresiva) y avance de guías. Las alertas NO se detallan
  * aquí: solo un punto animado invita a abrir el detalle, donde se desglosan.
  */
-export default function VuelosSplit({ items, loading, prefilterQuery, filtros = {}, onBuscar, onFiltrosChange }) {
+// Categorías del buscador. La placeholder y el comportamiento de filtrado
+// cambian según la seleccionada. La opción activa se envía como `buscar_tipo`
+// al backend para restringir la búsqueda a esa categoría.
+const CATEGORIAS = [
+  { key: 'vuelo',      label: 'Vuelo',     placeholder: 'Ej. 5Y 8676' },
+  { key: 'manifiesto', label: 'Manifiesto', placeholder: 'Ej. 2026-20107' },
+  { key: 'guia',       label: 'Guía',       placeholder: 'AWB o últimos 4 dígitos' },
+];
+
+export default function VuelosSplit({ items, loading, prefilterQuery, filtros = {}, onFiltrosChange }) {
   const [sel, setSel] = useState(null);
 
   // Auto-selecciona el primer vuelo cuando cambia la lista.
@@ -25,7 +51,30 @@ export default function VuelosSplit({ items, loading, prefilterQuery, filtros = 
     if (!items?.length) setSel(null);
   }, [items, sel]);
 
-  if (loading) {
+  // Buscador con debounce (300ms). El input mantiene su valor local para no
+  // perder foco/posición mientras el usuario tipea; solo después de la pausa
+  // se dispara onFiltrosChange (y por ende el fetch).
+  const [qLocal, setQLocal] = useState(filtros.buscar || '');
+  const [categoria, setCategoria] = useState(filtros.buscar_tipo || 'vuelo');
+
+  // Si filtros.buscar cambia desde afuera (limpieza, otra ruta) sincronizamos.
+  useEffect(() => { setQLocal(filtros.buscar || ''); }, [filtros.buscar]);
+
+  // Debounce: 300ms tras la última pulsación, propagamos cambios.
+  useEffect(() => {
+    const valorActual = filtros.buscar || '';
+    const tipoActual = filtros.buscar_tipo || 'vuelo';
+    if (qLocal === valorActual && categoria === tipoActual) return;
+    const id = setTimeout(() => {
+      onFiltrosChange?.({ ...filtros, buscar: qLocal, buscar_tipo: categoria });
+    }, 300);
+    return () => clearTimeout(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [qLocal, categoria]);
+
+  const cat = CATEGORIAS.find((c) => c.key === categoria) || CATEGORIAS[0];
+
+  if (loading && !items?.length) {
     return <div className="card p-12 text-center text-muted">Cargando vuelos...</div>;
   }
 
@@ -35,16 +84,37 @@ export default function VuelosSplit({ items, loading, prefilterQuery, filtros = 
     <div className="grid grid-cols-1 lg:grid-cols-[340px_1fr] gap-3 lg:h-[calc(100vh-7rem)]">
       {/* Master: lista */}
       <div className="card flex flex-col min-h-0">
-        {/* Cabecera: buscador + icono de filtros dentro del segmento de vuelos */}
-        <div className="px-2.5 py-2 border-b border-border bg-slate-50 space-y-2 shrink-0 rounded-t-lg">
+        {/* Cabecera: selector de categoría + buscador + icono de filtros */}
+        <div className="px-2.5 py-2 border-b border-border bg-slate-50 space-y-1.5 shrink-0 rounded-t-lg">
+          {/* Segmented control para elegir la categoría de búsqueda */}
+          <div className="flex items-center gap-1 p-0.5 rounded-md bg-white border border-border">
+            {CATEGORIAS.map((c) => {
+              const activo = c.key === categoria;
+              return (
+                <button
+                  key={c.key}
+                  type="button"
+                  onClick={() => setCategoria(c.key)}
+                  className={`flex-1 px-1.5 py-1 text-[11px] font-semibold rounded transition tracking-wide ${
+                    activo
+                      ? 'bg-navy text-white shadow-sm'
+                      : 'text-slate-500 hover:text-slate-800 hover:bg-slate-50'
+                  }`}
+                >
+                  {c.label}
+                </button>
+              );
+            })}
+          </div>
+
           <div className="flex items-center gap-1.5">
             <div className="relative flex-1 min-w-0">
               <input
                 type="text"
-                value={filtros.buscar || ''}
-                onChange={(e) => onBuscar?.(e.target.value)}
-                placeholder="Buscar vuelo, aerolínea, guía..."
-                className="w-full pl-7 pr-2 py-1.5 text-[12px] border border-border rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-navy/30"
+                value={qLocal}
+                onChange={(e) => setQLocal(e.target.value)}
+                placeholder={`Buscar por ${cat.label.toLowerCase()} — ${cat.placeholder}`}
+                className="w-full pl-7 pr-7 py-1.5 text-[12px] border border-border rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-navy/30"
               />
               <span className="absolute left-2 top-1/2 -translate-y-1/2 text-slate-400">
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -52,13 +122,29 @@ export default function VuelosSplit({ items, loading, prefilterQuery, filtros = 
                   <line x1="21" y1="21" x2="16.65" y2="16.65" />
                 </svg>
               </span>
+              {qLocal && (
+                <button
+                  type="button"
+                  onClick={() => setQLocal('')}
+                  title="Limpiar"
+                  className="absolute right-1.5 top-1/2 -translate-y-1/2 w-5 h-5 rounded hover:bg-slate-100 flex items-center justify-center text-slate-400 hover:text-slate-700"
+                >
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <line x1="18" y1="6" x2="6" y2="18" />
+                    <line x1="6" y1="6" x2="18" y2="18" />
+                  </svg>
+                </button>
+              )}
             </div>
             {onFiltrosChange && (
               <FiltrosVuelos filtros={filtros} onChange={onFiltrosChange} iconOnly />
             )}
           </div>
-          <div className="text-[10px] uppercase tracking-wider text-muted font-semibold">
+          <div className="text-[10px] uppercase tracking-wider text-muted font-semibold flex items-center gap-1.5">
             {items?.length || 0} vuelos
+            {loading && (
+              <span className="inline-block w-2 h-2 rounded-full bg-navy/40 animate-pulse" title="Actualizando" />
+            )}
           </div>
         </div>
         <div className="overflow-auto divide-y divide-border flex-1 min-h-0 max-h-[72vh] lg:max-h-none rounded-b-lg">
@@ -100,7 +186,7 @@ export default function VuelosSplit({ items, loading, prefilterQuery, filtros = 
 }
 
 function tieneFiltrosActivos(filtros) {
-  return ['dia', 'aerolinea', 'tipo_alerta', 'fecha_desde', 'fecha_hasta', 'buscar'].some(
+  return ['dia', 'aerolinea', 'fecha_desde', 'fecha_hasta', 'buscar'].some(
     (k) => filtros[k] && filtros[k] !== ''
   );
 }
@@ -122,7 +208,10 @@ function ListaVacia({ conFiltros }) {
 
 function ItemMaster({ v, activo, onClick }) {
   const [manifiestoAbierto, setManifiestoAbierto] = useState(false);
+  // Tracker tooltip: hover muestra; clic ancla (persiste hasta clic afuera).
   const [hoverRect, setHoverRect] = useState(null);
+  const [pinnedRect, setPinnedRect] = useState(null);
+  const triggerRef = useRef(null);
 
   const countAlertas = totalAlertas(v);
   const hayAlertas = countAlertas > 0;
@@ -133,6 +222,32 @@ function ItemMaster({ v, activo, onClick }) {
   const sinArribo = !ata; // sin arribo real → mostramos ETA y habilitamos tracker
   const countdown = countdownArribo(v);
 
+  // Cierra el tooltip anclado al hacer clic fuera de él o del disparador.
+  useEffect(() => {
+    if (!pinnedRect) return;
+    const onDown = (e) => {
+      if (triggerRef.current?.contains(e.target)) return;
+      setPinnedRect(null);
+    };
+    document.addEventListener('mousedown', onDown);
+    return () => document.removeEventListener('mousedown', onDown);
+  }, [pinnedRect]);
+
+  const handleTriggerClick = (e) => {
+    e.stopPropagation();
+    const rect = e.currentTarget.getBoundingClientRect();
+    setPinnedRect((cur) => (cur ? null : rect));
+    setHoverRect(null);
+  };
+  const handleTriggerEnter = (e) => {
+    if (pinnedRect) return;
+    setHoverRect(e.currentTarget.getBoundingClientRect());
+  };
+  const handleTriggerLeave = () => {
+    if (pinnedRect) return;
+    setHoverRect(null);
+  };
+
   // Avance de guías: entregadas (hito Despacho) sobre las realmente recibidas
   // (manifestadas − faltantes). La brecha manifestadas vs recibidas evidencia
   // por sí sola si hubo guías faltantes.
@@ -140,6 +255,21 @@ function ItemMaster({ v, activo, onClick }) {
   const entregadas = despacho?.completados ?? 0;
   const manifestadas = v.total_awbs ?? 0;
   const recibidas = Math.max(0, manifestadas - (v.guias_faltantes || 0));
+
+  // Resaltado por responsabilidad: las cards de vuelos con TALMA en curso
+  // llevan un sutil tinte ámbar + barra lateral pulsante para que destaquen.
+  // Solo pasa a rojo si TALMA lleva 8h+ sin cerrar (umbral propio, no usa el
+  // SLA del backend). El estilo "activo" (azul) tiene prioridad para no
+  // perder la selección.
+  const esTalma = v.sla?.responsabilidad === 'TALMA' && !v.sla?.vuelo_cerrado;
+  const talmaExcedido = esTalma && (v.sla?.minutos_transcurridos || 0) >= TALMA_RED_MIN;
+  const tinteCard = activo
+    ? 'bg-blue-50/70'
+    : talmaExcedido
+    ? 'bg-rose-50/60 hover:bg-rose-50/80'
+    : esTalma
+    ? 'bg-amber-50/50 hover:bg-amber-50/70'
+    : 'hover:bg-slate-50';
 
   return (
     <div
@@ -149,74 +279,95 @@ function ItemMaster({ v, activo, onClick }) {
       onKeyDown={(e) => {
         if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClick(); }
       }}
-      className={`w-full text-left px-3.5 py-3 transition relative cursor-pointer outline-none ${
-        activo ? 'bg-blue-50/70' : 'hover:bg-slate-50'
-      }`}
+      className={`w-full text-left px-3 py-2.5 transition relative cursor-pointer outline-none ${tinteCard}`}
     >
-      {activo && <span className="absolute left-0 top-0 bottom-0 w-1 bg-navy rounded-r" />}
+      {/* Barra lateral: activa (navy) tiene prioridad; sino, TALMA en curso
+          pinta una barra ámbar pulsante; TALMA excedido la pinta rosa. */}
+      {activo ? (
+        <span className="absolute left-0 top-0 bottom-0 w-1 bg-navy rounded-r" />
+      ) : talmaExcedido ? (
+        <span className="absolute left-0 top-0 bottom-0 w-1 bg-rose-400 rounded-r animate-pulse" />
+      ) : esTalma ? (
+        <span className="absolute left-0 top-0 bottom-0 w-1 bg-amber-400 rounded-r animate-pulse" />
+      ) : null}
 
-      {/* Fila 1: manifiesto (botón + número suelto) · punto de alerta */}
-      <div className="flex items-center gap-1.5">
-        <button
-          type="button"
-          onClick={(e) => { e.stopPropagation(); setManifiestoAbierto(true); }}
-          className="inline-flex items-center justify-center w-8 h-8 rounded-md text-slate-500 bg-slate-100 hover:text-navy hover:bg-blue-50 transition shrink-0"
-          title="Ver numeración del manifiesto de carga"
-        >
-          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <rect x="6" y="4" width="12" height="17" rx="2" />
-            <path d="M9 4V3a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v1" />
-            <path d="M9 11h6M9 15h4" />
-          </svg>
-        </button>
-        <span className="text-[12px] font-semibold text-slate-500 tabular-nums">{v.manifiesto}</span>
-        {hayAlertas && (
-          <span className="ml-auto">
-            <AlertaDot count={countAlertas} />
-          </span>
-        )}
-      </div>
-
-      {/* Fila 2: vuelo + origen (izq) · arribo ATA/ETA (der) — distribuido a lo ancho */}
-      <div className="mt-1.5 flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <div className="flex items-baseline gap-2">
-            <span className="text-base font-bold text-slate-800 tabular-nums leading-none">{v.vuelo}</span>
-            <span className="text-[10px] uppercase tracking-wider text-slate-400 font-bold">
+      {/* Cabecera del card: dos columnas. Izquierda con identificación del
+          vuelo (3 líneas: MFTO · vuelo+aerolinea · origen); derecha alineada
+          con esas líneas (tag de arribo · fecha · countdown). */}
+      <div className="flex items-start gap-2">
+        {/* Columna IZQUIERDA */}
+        <div className="flex-1 min-w-0">
+          {/* L1: icono manifiesto + MFTO. número */}
+          <div className="flex items-center gap-1.5">
+            <button
+              type="button"
+              onClick={(e) => { e.stopPropagation(); setManifiestoAbierto(true); }}
+              className="inline-flex items-center justify-center w-6 h-6 rounded-md text-slate-500 bg-slate-100 hover:text-navy hover:bg-blue-50 transition shrink-0"
+              title="Ver numeración del manifiesto de carga"
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="6" y="4" width="12" height="17" rx="2" />
+                <path d="M9 4V3a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v1" />
+                <path d="M9 11h6M9 15h4" />
+              </svg>
+            </button>
+            <span className="inline-flex items-baseline gap-1 text-[11px] font-semibold text-slate-500 tabular-nums">
+              <span className="text-[9px] uppercase tracking-wider text-slate-400 font-bold">MFTO.</span>
+              {v.manifiesto}
+            </span>
+          </div>
+          {/* L2: vuelo + aerolínea */}
+          <div className="mt-2 flex items-baseline gap-1.5">
+            <span className="text-[15px] font-bold text-slate-800 tabular-nums leading-none">{v.vuelo}</span>
+            <span className="text-[9px] uppercase tracking-wider text-slate-400 font-bold">
               {v.aerolinea_short || v.aerolinea}
             </span>
           </div>
-          {/* Origen (el destino siempre es LIM, así que se omite la ruta) */}
-          <div
-            className={`mt-1.5 inline-flex items-center gap-1.5 text-[12px] ${sinArribo ? '-mx-1 px-1 rounded-md hover:bg-sky-50/70 transition' : ''}`}
-            onMouseEnter={sinArribo ? (e) => setHoverRect(e.currentTarget.getBoundingClientRect()) : undefined}
-            onMouseLeave={sinArribo ? () => setHoverRect(null) : undefined}
-          >
+          {/* L3: origen */}
+          <div className="mt-1.5 inline-flex items-center gap-1 text-[11px]">
             <span className="text-[9px] uppercase tracking-wider text-slate-400 font-bold">Origen</span>
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="-rotate-90">
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="-rotate-90">
               <path d="M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.2c.4-.3.6-.7.5-1.2z" />
             </svg>
             <span className="font-bold text-slate-700">{v.origen}</span>
           </div>
         </div>
 
-        {/* Arribo — ATA (real, solo fecha) o ETA (estimada + cuenta regresiva) */}
-        <div className="shrink-0">
-          <ArriboInfo ata={ata} eta={v.eta} enVuelo={enVuelo} countdown={countdown} />
+        {/* Columna DERECHA apilada. Cuando hay alerta, ocupa la línea superior
+            y empuja el resto hacia abajo (así no se confunde con un conteo del
+            ATA). Sin alerta, el tag sube al tope (donde habitualmente vivían
+            las alertas). */}
+        <div className="shrink-0 flex flex-col items-end gap-1.5">
+          {hayAlertas && <AlertaDot vuelo={v} count={countAlertas} />}
+          <ArriboTag ata={ata} eta={v.eta} />
+          <span className={`text-[12px] tabular-nums leading-none ${ata ? 'font-semibold text-slate-700' : 'font-medium text-slate-500 italic'}`}>
+            {fmtFechaHora(ata || v.eta)}
+          </span>
+          {!ata && enVuelo && (
+            <CountdownArriboBtn
+              countdown={countdown}
+              triggerRef={triggerRef}
+              pinned={!!pinnedRect}
+              onClick={handleTriggerClick}
+              onEnter={handleTriggerEnter}
+              onLeave={handleTriggerLeave}
+            />
+          )}
         </div>
       </div>
 
-      {/* Fila 5: guías (manifestadas) + barra azul segmentada por hito */}
-      <div className="mt-2.5">
-        <div className="flex items-baseline justify-between text-[11px]">
-          <span className="text-slate-500">
-            <span className="font-bold text-slate-700 tabular-nums">{manifestadas}</span> g. manifestadas
-          </span>
-          <span className="text-slate-400 tabular-nums" title="Guías entregadas sobre las realmente recibidas (manifestadas − faltantes)">
-            <span className="font-bold text-slate-600">{entregadas}</span>/{recibidas} entreg.
+      {/* Fila: pill responsabilidad + conteo entregadas — solo si vuelo arribó
+          o ya hay entregas. Antes del arribo se omite para evitar huecos. */}
+      {(ata || entregadas > 0) && (
+        <div className="mt-2 flex items-center gap-2">
+          {ata && <SlaResponsabilidad sla={v.sla} />}
+          <span className="ml-auto text-[10px] text-slate-400 tabular-nums">
+            <span className="font-bold text-slate-600">{entregadas}</span>/{recibidas} entreg. · {manifestadas} man.
           </span>
         </div>
-        <SegmentBar trazabilidad={v.trazabilidad} bultosRecibidos={v.bultos_recibidos} />
+      )}
+      <div className="mt-2">
+        <SegmentBar trazabilidad={v.trazabilidad} />
       </div>
 
       {manifiestoAbierto &&
@@ -224,72 +375,188 @@ function ItemMaster({ v, activo, onClick }) {
           <ManifiestoModal vuelo={v} onClose={() => setManifiestoAbierto(false)} />,
           document.body
         )}
-      {hoverRect &&
-        createPortal(<TooltipVueloRuta vuelo={v} anchorRect={hoverRect} />, document.body)}
+      {(hoverRect || pinnedRect) &&
+        createPortal(
+          <TooltipVueloRuta
+            vuelo={v}
+            anchorRect={pinnedRect || hoverRect}
+            pinned={!!pinnedRect}
+            onClose={() => setPinnedRect(null)}
+          />,
+          document.body
+        )}
     </div>
   );
 }
 
+// Umbral simple para pintar en rojo cuando TALMA aún no cierra: 8h desde ATA.
+const TALMA_RED_MIN = 8 * 60;
+
 /**
- * Arribo del vuelo. Distingue de un vistazo si es ATA (arribo real → etiqueta
- * sólida + solo fecha) o ETA (estimado → etiqueta contorneada + fecha + cuenta
- * regresiva mientras está en vuelo).
+ * Pill de responsabilidad operativa post-ATA. Tooltip rico al hover.
+ *  - TALMA en curso: ámbar (rojo si pasó 8h) — tooltip muestra solo el
+ *    tiempo transcurrido.
+ *  - COURIER (vuelo cerrado): azul con check — tooltip muestra hora y
+ *    duración del cierre.
  */
-function ArriboInfo({ ata, eta, enVuelo, countdown }) {
+function SlaResponsabilidad({ sla }) {
+  if (!sla?.ata) return null;
+  const cerrado = !!sla.vuelo_cerrado;
+  const resp = sla.responsabilidad || (cerrado ? 'COURIER' : 'TALMA');
+  const transcurridos = sla.minutos_transcurridos || 0;
+
+  if (cerrado) {
+    const cierreExcedido = transcurridos >= TALMA_RED_MIN;
+    return (
+      <RichTooltipTrigger
+        title="COURIER"
+        rows={[
+          { label: 'Hora de cierre', valor: formatHora(sla.cierre_iso) },
+          {
+            label: 'Duración de cierre',
+            valor: cierreExcedido ? 'Se superaron las 8 horas' : formatHM(transcurridos),
+          },
+        ]}
+        width={cierreExcedido ? 280 : 240}
+      >
+        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded border text-[10px] font-bold uppercase tracking-wider border-sky-300 bg-sky-50 text-sky-700">
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="20 6 9 17 4 12" />
+          </svg>
+          <span className="opacity-70">Resp.:</span>
+          <span>{resp}</span>
+        </span>
+      </RichTooltipTrigger>
+    );
+  }
+
+  const excedido = transcurridos >= TALMA_RED_MIN;
+  const cls = excedido
+    ? 'border-rose-300 bg-rose-50 text-rose-700'
+    : 'border-amber-300 bg-amber-50 text-amber-700';
+  return (
+    <RichTooltipTrigger
+      title="TALMA"
+      rows={[{
+        label: 'Tiempo transcurrido',
+        valor: excedido ? 'Se superaron las 8 horas' : formatHM(transcurridos),
+      }]}
+      width={excedido ? 260 : 220}
+    >
+      <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded border text-[10px] font-bold uppercase tracking-wider ${cls}`}>
+        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round">
+          <circle cx="12" cy="12" r="9" />
+          <polyline points="12 7 12 12 15 14" />
+        </svg>
+        <span className="opacity-70">Resp.:</span>
+        <span>{resp}</span>
+      </span>
+    </RichTooltipTrigger>
+  );
+}
+
+function formatHM(minutos) {
+  const m = Math.max(0, Math.round(minutos || 0));
+  const h = Math.floor(m / 60);
+  const r = m % 60;
+  return h > 0 ? `${h}h ${String(r).padStart(2, '0')}min` : `${r}min`;
+}
+function formatHora(iso) {
+  if (!iso) return '—';
+  const d = new Date(iso);
+  const p = (n) => String(n).padStart(2, '0');
+  return `${p(d.getHours())}:${p(d.getMinutes())}`;
+}
+
+/**
+ * Etiqueta de arribo: ATA (sólida) si ya aterrizó, ETA (contorneada) si no.
+ * Solo el tag; la fecha y el countdown viven en filas separadas de la columna.
+ */
+function ArriboTag({ ata }) {
   if (ata) {
     return (
-      <div className="flex flex-col items-end gap-0.5">
-        <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider bg-slate-700 text-white">
-          ATA
-        </span>
-        <span className="text-[12px] font-semibold text-slate-700 tabular-nums">{fmtFechaHora(ata)}</span>
-      </div>
+      <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider bg-slate-700 text-white">
+        ATA
+      </span>
     );
   }
   return (
-    <div className="flex flex-col items-end gap-1">
-      <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider border border-sky-300 bg-sky-50 text-sky-700">
-        ETA
-      </span>
-      <span className="text-[12px] font-medium text-slate-500 tabular-nums italic">{fmtFechaHora(eta)}</span>
-      {enVuelo && (
-        <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-sky-600 whitespace-nowrap">
-          <span className="relative flex h-1.5 w-1.5">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-sky-400 opacity-75" />
-            <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-sky-500" />
-          </span>
-          {countdown || 'En vuelo'}
-        </span>
-      )}
-    </div>
+    <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider border border-sky-300 bg-sky-50 text-sky-700">
+      ETA
+    </span>
   );
 }
 
 /**
- * Barra de avance segmentada por los 5 hitos. Usa la MISMA regla que la
- * trazabilidad del detalle (helper `tonoHitos`), para que ambas cuadren:
- *   verde    → todas las guías superaron el hito
- *   amarillo → el hito ya inició y está en curso
- *   gris     → aún no inicia (p. ej. vuelo en el aire → recepción no arranca)
+ * Botón de cuenta regresiva al arribo. Hover muestra el tracker de ruta;
+ * clic lo ancla (persiste hasta clic afuera).
  */
-function SegmentBar({ trazabilidad, bultosRecibidos }) {
+function CountdownArriboBtn({ countdown, triggerRef, pinned, onClick, onEnter, onLeave }) {
+  return (
+    <button
+      ref={triggerRef}
+      type="button"
+      onClick={onClick}
+      onMouseEnter={onEnter}
+      onMouseLeave={onLeave}
+      title={pinned ? 'Clic para cerrar el tracker' : 'Clic para anclar · hover para ver el tracker'}
+      className={`inline-flex items-center gap-1 text-[11px] font-semibold whitespace-nowrap rounded-md px-1.5 py-0.5 transition border ${
+        pinned
+          ? 'bg-navy/10 text-navy border-navy/40'
+          : 'border-transparent text-sky-600 hover:bg-sky-50 hover:border-sky-200'
+      }`}
+    >
+      <span className="relative flex h-1.5 w-1.5">
+        <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${pinned ? 'bg-navy/40' : 'bg-sky-400'}`} />
+        <span className={`relative inline-flex rounded-full h-1.5 w-1.5 ${pinned ? 'bg-navy' : 'bg-sky-500'}`} />
+      </span>
+      {countdown || 'En vuelo'}
+    </button>
+  );
+}
+
+/**
+ * Barra de avance segmentada por los 5 hitos. Usa la MISMA regla binaria
+ * que la trazabilidad del detalle (helper `tonoHitos`):
+ *   verde → todas las guías superaron el hito (c === total)
+ *   gris  → cualquier otro caso (no existe estado "en curso")
+ * Cada segmento es un trigger de tooltip rico con el nombre del hito, el
+ * estado y el conteo de guías que pasaron / faltan.
+ */
+function SegmentBar({ trazabilidad }) {
   const segs = trazabilidad || [];
   if (segs.length === 0) return null;
-  const total = segs[0]?.total ?? 0;
-  const tonos = tonoHitos(segs.map((s) => s.completados), total, bultosRecibidos);
+  const tonos = tonoHitos(
+    segs.map((s) => s.completados),
+    segs.map((s) => s.total),
+  );
   return (
     <div className="mt-1.5 flex gap-1">
       {segs.map((h, i) => {
         const tone = tonos[i];
-        const fill = tone === 'verde' ? 'bg-ok' : tone === 'amarillo' ? 'bg-warn' : '';
+        const fill = tone === 'verde' ? 'bg-ok' : '';
+        const estadoTxt = tone === 'verde' ? 'Completado' : 'Pendiente';
+        const totalH = h.total || 0;
+        const pasaron = h.completados || 0;
+        const faltan = Math.max(0, totalH - pasaron);
+        const tipText = tone === 'verde'
+          ? `Todas las guías superaron este hito (${pasaron}/${totalH}).`
+          : `${pasaron}/${totalH} guías ya lo pasaron · ${faltan} pendientes.`;
         return (
-          <div
+          <RichTooltipTrigger
             key={h.key}
-            className="h-2 flex-1 rounded-sm bg-slate-200 overflow-hidden"
-            title={`${h.label}: ${tone === 'verde' ? 'completado' : tone === 'amarillo' ? 'en curso' : 'pendiente'}`}
+            title={HITO_LABEL_LARGO[h.key] || h.label}
+            rows={[
+              { label: 'Estado', valor: estadoTxt },
+              { label: 'Avance', valor: `${pasaron} / ${totalH}`, desc: tipText },
+            ]}
+            width={240}
+            className="flex-1"
           >
-            {fill && <div className={`h-full w-full rounded-sm transition-all duration-700 ease-out ${fill}`} />}
-          </div>
+            <div className="h-2 flex-1 w-full rounded-sm bg-slate-200 overflow-hidden">
+              {fill && <div className={`h-full w-full rounded-sm transition-all duration-700 ease-out ${fill}`} />}
+            </div>
+          </RichTooltipTrigger>
         );
       })}
     </div>
@@ -297,21 +564,37 @@ function SegmentBar({ trazabilidad, bultosRecibidos }) {
 }
 
 /**
- * Punto de alerta discreto: un círculo con ping lento (2s) que invita a abrir
- * el detalle sin saturar la vista. El desglose de alertas vive en Vista 2.
+ * Indicador de alerta prominente: círculo rosa con conteo, ping animado.
+ * Al pasar el cursor abre un tooltip con el desglose por tipo de alerta.
  */
-function AlertaDot({ count }) {
+function AlertaDot({ vuelo, count }) {
+  const rows = Object.entries(ALERTA_INFO)
+    .map(([tipo, info]) => ({ tipo, info, n: vuelo[info.key] || 0 }))
+    .filter((x) => x.n > 0)
+    .map((x) => ({
+      icon: <IconoAlerta tipo={x.tipo} size={14} />,
+      iconCls: x.info.cls,
+      label: x.info.label,
+      valor: String(x.n),
+      desc: x.info.desc,
+    }));
+
   return (
-    <span
-      className="relative flex h-2.5 w-2.5"
-      title={`${count} ${count === 1 ? 'guía' : 'guías'} con alertas — abre el detalle del vuelo`}
+    <RichTooltipTrigger
+      title={`${count} ${count === 1 ? 'guía' : 'guías'} con alertas`}
+      rows={rows}
+      width={264}
     >
-      <span
-        className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-60"
-        style={{ animationDuration: '2s' }}
-      />
-      <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-rose-500" />
-    </span>
+      <span className="relative inline-flex items-center justify-center">
+        <span
+          className="animate-ping absolute inline-flex h-5 w-5 rounded-full bg-rose-400 opacity-60"
+          style={{ animationDuration: '2s' }}
+        />
+        <span className="relative inline-flex items-center justify-center h-5 w-5 rounded-full bg-rose-500 ring-2 ring-white shadow-sm text-white text-[10px] font-bold tabular-nums">
+          {count > 9 ? '9+' : count}
+        </span>
+      </span>
+    </RichTooltipTrigger>
   );
 }
 

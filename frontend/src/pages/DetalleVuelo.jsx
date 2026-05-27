@@ -1,16 +1,13 @@
 import { useNavigate, useParams } from 'react-router-dom';
-import { useVueloDetail } from '../hooks/useVuelos.js';
-import VuelosTable from '../components/vuelos/VuelosTable.jsx';
+import DetalleVueloInline from '../components/vuelos/DetalleVueloInline.jsx';
 
 /**
  * Página independiente del detalle de vuelo (/vuelos/:manifiesto). Se mantiene
- * para enlaces directos / recarga; el flujo principal es la expansión inline
- * en la lista. Reutiliza la misma fila de la lista, ya expandida.
+ * para enlaces directos / recarga; el flujo principal es el panel de Split.
  */
 export default function DetalleVuelo() {
   const { manifiesto } = useParams();
   const navigate = useNavigate();
-  const { vuelo, loading, error } = useVueloDetail(manifiesto);
 
   return (
     <div className="p-6 space-y-4">
@@ -31,15 +28,7 @@ export default function DetalleVuelo() {
         </h1>
       </div>
 
-      {error && (
-        <div className="card p-4 border-danger text-danger text-sm">Error: {error}</div>
-      )}
-
-      <VuelosTable
-        items={vuelo ? [vuelo] : []}
-        loading={loading}
-        expandirInicial={manifiesto}
-      />
+      <DetalleVueloInline manifiesto={manifiesto} withHeader />
     </div>
   );
 }

@@ -16,13 +16,29 @@ const OPCIONES_AEROLINEA = [
   { value: 'ATLAS', label: 'ATLAS' },
 ];
 
-const OPCIONES_ALERTA = [
-  { value: '', label: 'Todas las alertas' },
-  { value: 'faltantes', label: 'Con guías faltantes' },
-  { value: 'parciales', label: 'Con guías parciales' },
-  { value: 'inmov', label: 'Con inmovilizadas' },
-  { value: 'mal_estado', label: 'Con mal estado' },
-];
+// Ventana del tablero: 7 días atrás y hasta mañana (vuelos programados del día
+// siguiente). El selector de fecha personalizado se restringe a este rango.
+const RANGO_ATRAS_DIAS = 7;
+const RANGO_ADELANTE_DIAS = 1;
+
+function ymdHoyLima() {
+  return new Date().toLocaleDateString('en-CA', { timeZone: 'America/Lima' });
+}
+function ymdOffset(ymd, days) {
+  const d = new Date(ymd + 'T00:00:00Z');
+  d.setUTCDate(d.getUTCDate() + days);
+  return d.toISOString().slice(0, 10);
+}
+function clampYmd(ymd, min, max) {
+  if (!ymd) return ymd;
+  if (ymd < min) return min;
+  if (ymd > max) return max;
+  return ymd;
+}
+function fmtDdMm(ymd) {
+  const [, m, d] = ymd.split('-');
+  return `${d}/${m}`;
+}
 
 export default function FiltrosVuelos({ filtros, onChange, iconOnly = false }) {
   const [open, setOpen] = useState(false);
@@ -69,7 +85,7 @@ export default function FiltrosVuelos({ filtros, onChange, iconOnly = false }) {
     return () => document.removeEventListener('mousedown', onClickOut);
   }, []);
 
-  const tieneFiltros = ['dia', 'aerolinea', 'tipo_alerta', 'fecha_desde', 'fecha_hasta'].some(
+  const tieneFiltros = ['dia', 'aerolinea', 'fecha_desde', 'fecha_hasta'].some(
     (k) => filtros[k] && filtros[k] !== ''
   );
 
@@ -79,7 +95,6 @@ export default function FiltrosVuelos({ filtros, onChange, iconOnly = false }) {
       ...filtros,
       dia: '',
       aerolinea: '',
-      tipo_alerta: '',
       fecha_desde: '',
       fecha_hasta: '',
     });
@@ -141,31 +156,7 @@ export default function FiltrosVuelos({ filtros, onChange, iconOnly = false }) {
             options={OPCIONES_AEROLINEA}
             onChange={(v) => update('aerolinea', v)}
           />
-          <Select
-            label="Alertas"
-            value={filtros.tipo_alerta || ''}
-            options={OPCIONES_ALERTA}
-            onChange={(v) => update('tipo_alerta', v)}
-          />
-          <div>
-            <div className="label-xs mb-1">Rango de fechas (personalizado)</div>
-            <div className="grid grid-cols-2 gap-2">
-              <input
-                type="date"
-                value={filtros.fecha_desde || ''}
-                onChange={(e) => update('fecha_desde', e.target.value)}
-                className="px-2 py-1.5 border border-border rounded-md text-sm"
-                title="Desde"
-              />
-              <input
-                type="date"
-                value={filtros.fecha_hasta || ''}
-                onChange={(e) => update('fecha_hasta', e.target.value)}
-                className="px-2 py-1.5 border border-border rounded-md text-sm"
-                title="Hasta"
-              />
-            </div>
-          </div>
+          <RangoFechas filtros={filtros} update={update} />
           {tieneFiltros && (
             <button
               onClick={limpiar}
@@ -177,6 +168,46 @@ export default function FiltrosVuelos({ filtros, onChange, iconOnly = false }) {
         </div>,
         document.body
       )}
+    </div>
+  );
+}
+
+/**
+ * Selector de rango personalizado restringido a la ventana operativa del
+ * tablero: 7 días atrás hasta mañana. El selector nativo del navegador respeta
+ * `min`/`max` (no permite navegar fuera) y además clampeamos en onChange por
+ * si el usuario teclea una fecha manualmente.
+ */
+function RangoFechas({ filtros, update }) {
+  const hoy = ymdHoyLima();
+  const minFecha = ymdOffset(hoy, -RANGO_ATRAS_DIAS);
+  const maxFecha = ymdOffset(hoy, RANGO_ADELANTE_DIAS);
+  return (
+    <div>
+      <div className="label-xs mb-1">Rango de fechas (personalizado)</div>
+      <div className="grid grid-cols-2 gap-2">
+        <input
+          type="date"
+          value={filtros.fecha_desde || ''}
+          min={minFecha}
+          max={maxFecha}
+          onChange={(e) => update('fecha_desde', clampYmd(e.target.value, minFecha, maxFecha))}
+          className="px-2 py-1.5 border border-border rounded-md text-sm"
+          title={`Desde — disponible entre ${fmtDdMm(minFecha)} y ${fmtDdMm(maxFecha)}`}
+        />
+        <input
+          type="date"
+          value={filtros.fecha_hasta || ''}
+          min={minFecha}
+          max={maxFecha}
+          onChange={(e) => update('fecha_hasta', clampYmd(e.target.value, minFecha, maxFecha))}
+          className="px-2 py-1.5 border border-border rounded-md text-sm"
+          title={`Hasta — disponible entre ${fmtDdMm(minFecha)} y ${fmtDdMm(maxFecha)}`}
+        />
+      </div>
+      <div className="text-[10px] text-slate-400 mt-1">
+        Ventana del tablero: {fmtDdMm(minFecha)} – {fmtDdMm(maxFecha)}
+      </div>
     </div>
   );
 }

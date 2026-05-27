@@ -7,6 +7,7 @@ const ESTILO_POR_TIPO = {
   INMOVILIZACION: { cls: 'bg-orange-50 border-orange-300 text-orange-700', label: 'Inmovilizada' },
   MAL_ESTADO:     { cls: 'bg-red-50    border-red-300    text-danger',     label: 'Mal estado' },
   GUIA_FALTANTE:  { cls: 'bg-slate-100 border-slate-300 text-slate-600', label: 'Faltante' },
+  PARCIAL:        { cls: 'bg-amber-50  border-amber-300  text-amber-700', label: 'Parcial' },
 };
 
 // `onMalEstado` (opcional): si se pasa, la etiqueta "Mal estado" se vuelve un

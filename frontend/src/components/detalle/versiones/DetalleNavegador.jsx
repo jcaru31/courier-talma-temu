@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { buildHitosAwb } from '../../../utils/hitosAwb.js';
 import {
-  DatosGuiaCard, CargaCard, HitosStrip,
+  FichaGuiaCard, HitosStrip,
   EventoItem, EventosHeader, hitoInicial,
 } from './comun.jsx';
 
@@ -17,8 +17,7 @@ export default function DetalleNavegador({ awb }) {
 
   return (
     <div className="space-y-4">
-      <DatosGuiaCard awb={awb} />
-      <CargaCard awb={awb} />
+      <FichaGuiaCard awb={awb} />
 
       <HitosStrip hitos={hitos} selectedKey={selKey} onSelect={setSelKey} />
 

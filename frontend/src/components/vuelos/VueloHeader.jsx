@@ -181,6 +181,6 @@ function formatFechaHora(iso) {
 }
 function formatKg(n) {
   if (n == null) return '—';
-  return n.toLocaleString('es-PE', { minimumFractionDigits: 2 });
+  return n.toLocaleString('es-PE', { minimumFractionDigits: 1, maximumFractionDigits: 1, useGrouping: false });
 }
 function pad(n) { return String(n).padStart(2, '0'); }

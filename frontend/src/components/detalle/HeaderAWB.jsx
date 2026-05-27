@@ -1,4 +1,5 @@
 import AlertasEtiquetas from './AlertasEtiquetas.jsx';
+import { alertaHandlingPendiente } from '../../utils/handlingAlerta.js';
 
 /**
  * Header de la guía (Vista 3) — versión ágil. Datos comerciales/operativos
@@ -6,7 +7,7 @@ import AlertasEtiquetas from './AlertasEtiquetas.jsx';
  * muestran como etiquetas chiquitas al lado del título "Datos de la guía".
  */
 export default function HeaderAWB({ awb }) {
-  const handlingNoPagado = awb.handling_pagado === false;
+  const handlingNoPagado = alertaHandlingPendiente(awb);
 
   return (
     <div className="card p-4">
@@ -22,7 +23,7 @@ export default function HeaderAWB({ awb }) {
             <Field label="Fecha de Emisión" value={formatFechaHora(awb.fecha_emision)} mono />
             <Field label="Tipo Almac." value={awb.tipo_almacenamiento} />
             <Field label="Volante" value={awb.volante} mono />
-            <Field label="Agente de Carga" value={awb.agente_carga} />
+            <Field label="Consignatario" value={awb.consignatario_nombre} />
             <Field label="RUC del Consignatario" value={awb.consignatario?.ruc} mono />
           </div>
         </div>
@@ -84,7 +85,7 @@ function Ratio({ label, rec, man }) {
 
 function fmt(n) {
   if (n == null) return '—';
-  return n.toLocaleString('es-PE', { minimumFractionDigits: 2 });
+  return n.toLocaleString('es-PE', { minimumFractionDigits: 1, maximumFractionDigits: 1, useGrouping: false });
 }
 function pad(n) { return String(n).padStart(2, '0'); }
 function formatFechaHora(iso) {

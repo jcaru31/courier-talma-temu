@@ -1,15 +1,16 @@
 import { useLayoutEffect, useRef, useState } from 'react';
 import MapaVueloRuta from './MapaVueloRuta.jsx';
-import { nombrePuerto } from '../../utils/puertos.js';
 
 /**
  * Hover-card flotante con el tracker de posición de un vuelo en ruta.
- * Se posiciona con `position: fixed` respecto al elemento ancla (la hora de
- * arribo) y hace flip si no cabe en pantalla — responsive.
+ * Se posiciona con `position: fixed` respecto al elemento ancla y hace flip si
+ * no cabe en pantalla. Soporta dos modos:
+ *   - hover (default): no captura clicks; desaparece al sacar el mouse.
+ *   - pinned (anclado al hacer clic): captura eventos y muestra botón X.
  */
 const ANCHO = 360;
 
-export default function TooltipVueloRuta({ vuelo, anchorRect }) {
+export default function TooltipVueloRuta({ vuelo, anchorRect, pinned = false, onClose }) {
   const ref = useRef(null);
   const [pos, setPos] = useState({ left: -9999, top: -9999 });
 
@@ -37,14 +38,34 @@ export default function TooltipVueloRuta({ vuelo, anchorRect }) {
   return (
     <div
       ref={ref}
-      className="fixed z-50 bg-card rounded-xl border border-border shadow-2xl overflow-hidden pointer-events-none"
+      className={`fixed z-50 bg-card rounded-xl border ${
+        pinned ? 'border-navy/40 shadow-2xl ring-2 ring-navy/10' : 'border-border shadow-2xl pointer-events-none'
+      } overflow-hidden`}
       style={{ left: pos.left, top: pos.top, width: ANCHO }}
+      onMouseDown={(e) => e.stopPropagation()}
     >
+      {/* Cabecera: chip TRACKER (izq) · MATRÍCULA: XXX (der) · X cuando está pinned */}
       <div className="px-3 py-2 border-b border-border flex items-center gap-2">
         <span className="text-[10px] uppercase tracking-wider text-muted font-semibold">
           Tracker de ruta
         </span>
-        <span className="text-[11px] text-muted ml-auto tabular-nums">{vuelo.matricula}</span>
+        <span className="ml-auto inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-navy/10 text-navy text-[11px] font-bold tabular-nums">
+          <span className="text-[9px] uppercase tracking-wider opacity-70">Matrícula:</span>
+          {vuelo.matricula || '—'}
+        </span>
+        {pinned && (
+          <button
+            type="button"
+            onClick={onClose}
+            title="Cerrar"
+            className="w-5 h-5 rounded hover:bg-slate-100 flex items-center justify-center text-slate-400 hover:text-slate-700"
+          >
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="18" y1="6" x2="6" y2="18" />
+              <line x1="6" y1="6" x2="18" y2="18" />
+            </svg>
+          </button>
+        )}
       </div>
 
       <div className="p-3">
@@ -65,9 +86,6 @@ export default function TooltipVueloRuta({ vuelo, anchorRect }) {
           <Stat label="Salida origen" valor={formatHora(vuelo.fecha_salida_origen)} sub={vuelo.origen} />
           <Stat label="Llega en" valor={formatRestante(ruta.minutos_para_arribo)} sub="aterrizaje" destacado />
           <Stat label="Arribo estimado" valor={formatHora(vuelo.eta)} sub="LIM" />
-        </div>
-        <div className="text-[10px] text-slate-400 mt-2 text-center truncate">
-          Origen: {nombrePuerto(vuelo.origen)}
         </div>
       </div>
     </div>

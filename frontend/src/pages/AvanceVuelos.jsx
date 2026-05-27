@@ -1,56 +1,42 @@
-import { useState, useEffect } from 'react';
-import VuelosTable from '../components/vuelos/VuelosTable.jsx';
-import FiltrosVuelos from '../components/vuelos/FiltrosVuelos.jsx';
-import VersionSwitcher from '../components/vuelos/versiones/VersionSwitcher.jsx';
-import VuelosMinimal from '../components/vuelos/versiones/VuelosMinimal.jsx';
+import { useEffect, useState } from 'react';
 import VuelosSplit from '../components/vuelos/versiones/VuelosSplit.jsx';
-import VuelosAgenda from '../components/vuelos/versiones/VuelosAgenda.jsx';
-import { useAutoRefresh } from '../hooks/useAutoRefresh.js';
 import { useVuelos } from '../hooks/useVuelos.js';
 import { useInventarioModal } from '../context/InventarioModalContext.jsx';
 
-const VERSION_KEY = 'vuelos_version';
+// Solo simulamos refresco de la marca de tiempo (cada minuto el indicador
+// avanza) para no recargar la pantalla y perder el foco/selección actual.
+const TICK_TIMESTAMP_MS = 60 * 1000;
 
 export default function AvanceVuelos() {
   const [filtros, setFiltros] = useState({});
-  const [page, setPage] = useState(1);
   const [toast, setToast] = useState(null);
-  const [version, setVersion] = useState(
-    () => localStorage.getItem(VERSION_KEY) || 'clasica'
-  );
-  const limit = 10;
 
-  const cambiarVersion = (v) => {
-    setVersion(v);
-    localStorage.setItem(VERSION_KEY, v);
-  };
-
-  const { items, total, total_pages, hoy, manana, awb_matches, loading, error, refetch } = useVuelos(filtros, page, limit);
-  const { reset } = useAutoRefresh(() => refetch());
+  // Sin paginación: para courier diario alcanza con ~10 vuelos visibles a la vez.
+  const { items, loading, error, refetch } = useVuelos(filtros, 1, 100);
   const inventario = useInventarioModal();
 
-  // Marca de tiempo de la última carga de datos: se actualiza cada vez que
-  // termina un fetch (manual o por auto-refresh).
+  // Marca de tiempo de la última carga real de datos. El tick cosmético la
+  // adelanta cada minuto (sin tocar la data), y el refetch manual la resetea.
   const [ultimaActualizacion, setUltimaActualizacion] = useState(() => new Date());
   useEffect(() => {
     if (!loading) setUltimaActualizacion(new Date());
   }, [loading]);
+  useEffect(() => {
+    const id = setInterval(() => setUltimaActualizacion(new Date()), TICK_TIMESTAMP_MS);
+    return () => clearInterval(id);
+  }, []);
 
-  const handleManualRefresh = () => { refetch(); reset(); };
-  const handleFiltrosChange = (f) => { setFiltros(f); setPage(1); };
-  const handleBuscar = (v) => handleFiltrosChange({ ...filtros, buscar: v });
+  const handleManualRefresh = () => refetch();
+  const handleFiltrosChange = (f) => setFiltros(f);
 
   const handleDescargar = () => {
     setToast('La exportación a Excel estará disponible próximamente.');
     setTimeout(() => setToast(null), 3500);
   };
 
-  const desde = total === 0 ? 0 : (page - 1) * limit + 1;
-  const hasta = Math.min(page * limit, total);
-
   return (
     <div className="p-6 space-y-3">
-      {/* Fila 1: Titulo + (a la derecha) última actualización + acciones */}
+      {/* Cabecera: título + acciones (En almacén, actualizar, exportar) */}
       <div className="flex items-center justify-between gap-4 flex-wrap">
         <div className="flex items-center gap-3">
           <IconAvionBig />
@@ -59,9 +45,6 @@ export default function AvanceVuelos() {
           </h1>
         </div>
         <div className="flex items-center gap-3 flex-wrap">
-          <VersionSwitcher value={version} onChange={cambiarVersion} />
-          <div className="w-px h-6 bg-border" />
-          {/* En almacén: abre el modal con la tablita de guías en almacén */}
           <button
             onClick={inventario.open}
             className="flex items-center gap-2 pl-2.5 pr-2 py-1.5 rounded-md border border-border text-slate-700 hover:bg-slate-50 transition"
@@ -76,7 +59,6 @@ export default function AvanceVuelos() {
             )}
           </button>
           <div className="w-px h-6 bg-border" />
-          {/* Actualizar: control discreto con icono que gira + fecha/hora inline */}
           <button
             onClick={handleManualRefresh}
             className="group flex items-center gap-2 pl-2 pr-2.5 py-1.5 rounded-md text-slate-400 hover:text-slate-700 hover:bg-slate-50 transition"
@@ -99,101 +81,17 @@ export default function AvanceVuelos() {
         </div>
       </div>
 
-      {/* Fila 2: Toolbar densa — buscador (salvo split), filtros, paginación.
-          En Split, buscador y filtros viven en el panel; si además no hay más
-          de una página, la barra quedaría vacía, así que se oculta. */}
-      {(version !== 'split' || total_pages > 1) && (
-      <div className="card px-3 py-2.5 flex items-center gap-x-5 gap-y-2 flex-wrap">
-        {/* En la vista Split el buscador y los filtros viven dentro del panel
-            de vuelos, así que aquí solo se muestran para las demás vistas. */}
-        {version !== 'split' && (
-          <>
-            <div className="relative flex-shrink-0">
-              <input
-                type="text"
-                value={filtros.buscar || ''}
-                onChange={(e) => handleBuscar(e.target.value)}
-                placeholder="Buscar vuelo, aerolínea, manifiesto o guía (últimos 4 dígitos)..."
-                className="pl-8 pr-3 py-1.5 text-sm border border-border rounded-md w-72 focus:outline-none focus:ring-2 focus:ring-navy/30"
-              />
-              <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400">
-                <IconSearch />
-              </span>
-            </div>
-
-            <FiltrosVuelos filtros={filtros} onChange={handleFiltrosChange} />
-          </>
-        )}
-
-        {/* Paginación a la derecha */}
-        <div className="ml-auto flex items-center gap-2 text-sm text-muted">
-          <span className="tabular-nums">{desde}-{hasta} de {total}</span>
-          <button
-            onClick={() => setPage((p) => Math.max(1, p - 1))}
-            disabled={page <= 1}
-            className="w-7 h-7 rounded-md border border-border flex items-center justify-center disabled:opacity-40 hover:bg-slate-50"
-          >‹</button>
-          <button
-            onClick={() => setPage((p) => Math.min(total_pages, p + 1))}
-            disabled={page >= total_pages}
-            className="w-7 h-7 rounded-md bg-navy text-white flex items-center justify-center disabled:opacity-40"
-          >›</button>
-        </div>
-      </div>
-      )}
-
       {error && (
         <div className="card p-4 border-danger text-danger text-sm">Error: {error}</div>
       )}
 
-      {/* Chip de matches por AWB: cuando el usuario buscó (típicamente por los
-          últimos 4 dígitos), enseña en qué vuelos aparece esa guía. Útil
-          para guías parciales cuyo restante puede venir en otro vuelo. */}
-      {filtros.buscar && (awb_matches?.length || 0) > 0 && (
-        <div className="card px-3 py-2 flex items-center gap-2 flex-wrap text-[12px]">
-          <span className="text-[10px] uppercase tracking-wider text-muted font-semibold">
-            Resultado por guía
-          </span>
-          {awb_matches.map((m) => (
-            <span
-              key={m.awb}
-              className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md border border-navy/30 bg-blue-50 text-navy"
-            >
-              <span className="text-[11px] font-bold tabular-nums">{m.awb}</span>
-              <span className="text-[10px] uppercase tracking-wide opacity-70">
-                {m.manifiestos.length === 1 ? 'vuelo:' : 'vuelos:'}
-              </span>
-              <span className="text-[11px] font-semibold">{m.manifiestos.join(', ')}</span>
-            </span>
-          ))}
-        </div>
-      )}
-
-      {version === 'clasica' && (
-        <VuelosTable items={items} loading={loading} prefilterQuery={filtros.buscar || ''} />
-      )}
-      {version === 'minimal' && (
-        <VuelosMinimal items={items} loading={loading} prefilterQuery={filtros.buscar || ''} />
-      )}
-      {version === 'split' && (
-        <VuelosSplit
-          items={items}
-          loading={loading}
-          prefilterQuery={filtros.buscar || ''}
-          filtros={filtros}
-          onBuscar={handleBuscar}
-          onFiltrosChange={handleFiltrosChange}
-        />
-      )}
-      {version === 'agenda' && (
-        <VuelosAgenda
-          items={items}
-          loading={loading}
-          prefilterQuery={filtros.buscar || ''}
-          hoy={hoy}
-          manana={manana}
-        />
-      )}
+      <VuelosSplit
+        items={items}
+        loading={loading}
+        prefilterQuery={filtros.buscar || ''}
+        filtros={filtros}
+        onFiltrosChange={handleFiltrosChange}
+      />
 
       {toast && (
         <div className="fixed bottom-6 right-6 bg-slate-900 text-white px-4 py-3 rounded-md shadow-lg text-sm font-medium max-w-sm z-50">
@@ -244,14 +142,6 @@ function IconDownload() {
   return (
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
       <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3" />
-    </svg>
-  );
-}
-function IconSearch() {
-  return (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <circle cx="11" cy="11" r="7" />
-      <line x1="21" y1="21" x2="16.65" y2="16.65" />
     </svg>
   );
 }

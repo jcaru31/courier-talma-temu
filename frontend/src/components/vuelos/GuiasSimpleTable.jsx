@@ -1,61 +1,48 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { IconoAlerta } from './alertaIconos.jsx';
-import VerificacionModal, { IconDoc } from './VerificacionModal.jsx';
 import VolanteModal from './VolanteModal.jsx';
 import ActaMalEstadoModal from '../inventario/ActaMalEstadoModal.jsx';
-import { buildHitosAwb } from '../../utils/hitosAwb.js';
+import { alertaHandlingPendiente } from '../../utils/handlingAlerta.js';
 
-// Estado de la guía = el hito que trabaja ahora (modelo "hito en curso").
-// Colores:
-//   VERDE    — el hito previo terminó y el siguiente aún no empieza. La
-//              etiqueta lleva el nombre del siguiente hito (queda "a la espera").
-//   AMARILLO — el hito ya empezó: lleva su nombre + un círculo de estado
-//              animado que llama la atención.
-//   FALTANTE — guía manifestada que no arribó: quedó en Trasmisión Aerolínea
-//              (hasta ese punto la aerolínea la transmitió, pero nunca llegó a
-//              Recepción). Tono violeta para que no se lea como avance normal.
-// ENTREGADA es el estado terminal (verde con check).
-const HITO_LABEL = {
-  aerolinea:     'TRASMISIÓN AEROLÍNEA',
-  recepcion:     'RECEPCIÓN',
-  transmisiones: 'TRASMISIÓN ALMACÉN',
-  facturacion:   'FACTURACIÓN',
-  despacho:      'DESPACHO',
+// HITO ACTUAL de la guía = el hito más profundo cuya 1ra actividad ya se
+// completó (la guía entró en él). El matiz "en curso vs terminado" dentro
+// del hito vive en la vista 3, no acá. El estado terminal ENTREGADA se
+// eliminó: una guía con despacho cerrado sigue teniendo HITO ACTUAL =
+// DESPACHO y el flag `entregada` activa el check verde.
+const TRACKING_A_HITO = {
+  TRASMISION_AEROLINEA: 'TRASMISIÓN AEROLÍNEA',
+  MANIFESTADO:          'RECEPCIÓN',
+  TRANSMISIONES:        'TRASMISIÓN ALMACÉN',
+  FACTURACION:          'FACTURACIÓN',
+  DESPACHO:             'DESPACHO',
 };
 
-// Estado de la guía a partir de sus hitos reales (mismos que la Vista 3):
-//   AMARILLO + nombre → hay un hito EN CURSO (ya empezó, falta terminar). Ej.:
-//     al registrarse "Llegada al almacén" pasa de Trasm. Aerolínea a Recepción.
-//   VERDE + nombre    → el último hito COMPLETADO (nada en curso aún). Ej.: vuelo
-//     en el aire = "Trasm. Aerolínea" verde (lo único completado).
-//   VERDE + check     → Despacho completado = entregada (terminal).
-//   FALTANTE          → gris (no arribó); su distintivo es el ícono "?" + fila sombreada.
+// Estado visible de la guía. Solo tres variantes:
+//   faltante  — gris + ícono "?" (no arribó).
+//   entregada — verde + check (despacho con entrega de carga completada).
+//   hito      — chip neutro con el nombre del hito actual.
 function estadoGuia(a) {
   if (a.estado_tracking === 'FALTANTE' || a.status === 'GUIA_FALTANTE') {
-    return { label: 'FALTANTE', tone: 'faltante', terminal: false };
+    return { label: 'FALTANTE', tone: 'faltante' };
   }
-  const hitos = buildHitosAwb(a);
-  const enCurso = hitos.find((h) => h.estado === 'EN_CURSO');
-  if (enCurso) {
-    return { label: HITO_LABEL[enCurso.key] || '—', tone: 'amarillo', terminal: false };
+  if (a.estado_tracking === 'DESPACHO' && a.entregada) {
+    return { label: 'DESPACHO', tone: 'entregada' };
   }
-  const completados = hitos.filter((h) => h.estado === 'COMPLETADO');
-  const ultimo = completados[completados.length - 1];
-  const key = ultimo?.key || 'aerolinea';
-  return { label: HITO_LABEL[key], tone: 'verde', terminal: key === 'despacho' };
+  const label = TRACKING_A_HITO[a.estado_tracking] || 'TRASMISIÓN AEROLÍNEA';
+  return { label, tone: 'hito' };
 }
 
-// Orden cronológico de los hitos: el más atrasado (FALTANTE/MANIFESTADO) ocupa
-// el peor lugar (0) y ENTREGADA el mejor (5). Se usa para sortear la tabla
-// poniendo arriba las guías cuyo hito en curso está más rezagado.
+// Orden cronológico de los hitos: el más atrasado (FALTANTE) ocupa el peor
+// lugar (0) y DESPACHO el mejor (5). Se usa para sortear la tabla poniendo
+// arriba las guías cuyo hito actual está más rezagado.
 const ORDEN_HITO = {
-  FALTANTE:      0,
-  MANIFESTADO:   1,
-  TRANSMISIONES: 2,
-  FACTURACION:   3,
-  DESPACHO:      4,
-  ENTREGADA:     5,
+  FALTANTE:             0,
+  TRASMISION_AEROLINEA: 1,
+  MANIFESTADO:          2,
+  TRANSMISIONES:        3,
+  FACTURACION:          4,
+  DESPACHO:             5,
 };
 
 // Cuenta subeventos COMPLETADOS en todo el timeline — sirve como criterio
@@ -72,11 +59,25 @@ function subeventosCompletados(a) {
   return n;
 }
 
-// Autorización de Salida derivada del canal_dam.con_levante.
-// AUTORIZADO si tiene levante; PENDIENTE en cualquier otro caso (rojo sin
-// levante, naranja, sin canal asignado, planificado, etc.)
+// Autorización de Salida (verificación aduanera). Para mostrarse como
+// AUTORIZADO se requieren TRES condiciones simultáneas:
+//   1. Levante otorgado por SUNAT (`canal_dam.con_levante === true`). Esto
+//      excluye automáticamente las guías inmovilizadas (canal rojo sin
+//      levante) y las que aún no tienen canal asignado.
+//   2. Pago del handling registrado en el sistema (subev "Facturacion
+//      handling" COMPLETADO).
+//   3. Pago del traslado postal registrado (subev "Facturacion traslado
+//      postal" COMPLETADO).
+// La verificación aduanera no puede consignarse antes de tener ambas
+// facturaciones (handling + traslado) porque sin VCT la SUNAT no la procesa.
 function autorizacionSalida(awb) {
-  return awb.canal_dam?.con_levante === true ? 'AUTORIZADO' : 'PENDIENTE';
+  if (awb.canal_dam?.con_levante !== true) return 'PENDIENTE';
+  const subs = awb.timeline?.despacho_eseer?.subeventos || [];
+  const handling = subs.find((s) => /facturacion handling/i.test(s.nombre || ''));
+  const traslado = subs.find((s) => /traslado postal/i.test(s.nombre || ''));
+  if (handling?.estado !== 'COMPLETADO') return 'PENDIENTE';
+  if (traslado?.estado !== 'COMPLETADO') return 'PENDIENTE';
+  return 'AUTORIZADO';
 }
 
 // Aviso de llegada (transmisión a aduanas) — es por guía: se considera
@@ -105,9 +106,9 @@ export default function GuiasSimpleTable({
   alturaMinima = '50vh',
   onSelectAwb = () => {},
   fill = false,
+  preAta = false,
 }) {
   const [busqueda, setBusqueda] = useState(prefilterQuery);
-  const [verificacionAwb, setVerificacionAwb] = useState(null);
   const [volanteAwb, setVolanteAwb] = useState(null);
   const [actaAwb, setActaAwb] = useState(null);
 
@@ -161,6 +162,9 @@ export default function GuiasSimpleTable({
             Filtro: {filtroActivoLabel}
           </span>
         )}
+        <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider bg-slate-100 text-slate-600 px-2 py-1 rounded border border-border">
+          {awbsVisibles.length} {awbsVisibles.length === 1 ? 'guía' : 'guías'}
+        </span>
         <div className="ml-auto flex items-center gap-2">
           <button
             type="button"
@@ -204,7 +208,7 @@ export default function GuiasSimpleTable({
               <Th rowSpan={2} className="text-center align-middle">Mal<br/>estado</Th>
               <Th rowSpan={2} className="text-center align-middle">Aviso de<br/>llegada</Th>
               <Th rowSpan={2} className="text-center align-middle">Verificación<br/>Aduanera</Th>
-              <Th rowSpan={2} className="text-left align-middle">Estado</Th>
+              <Th rowSpan={2} className="text-left align-middle">Hito actual</Th>
               <Th rowSpan={2} className="align-middle" />
             </tr>
             <tr className="text-[9px] tracking-wider uppercase text-muted font-semibold border-b border-border">
@@ -230,7 +234,10 @@ export default function GuiasSimpleTable({
               const bultosFalt = esFaltante ? 0 : (a.bultos_faltantes || 0);
               const avisoEnviado = avisoLlegadaEnviado(a);
               const esEntregada = entregada(a);
-              const handlingPendiente = a.handling_pagado === false;
+              // Pre-ATA: el handling no es accionable hasta que la carga arriba,
+              // así que ocultamos el indicador para no contaminar la tabla.
+              // La regla de fondo (volante emitido) vive en alertaHandlingPendiente.
+              const handlingPendiente = !preAta && alertaHandlingPendiente(a);
 
               return (
                 <tr
@@ -284,10 +291,7 @@ export default function GuiasSimpleTable({
                     />
                   </Td>
                   <Td className="text-center">
-                    <CeldaVerificacion
-                      verificada={auth === 'AUTORIZADO'}
-                      onAbrir={(e) => { e.stopPropagation(); setVerificacionAwb(a); }}
-                    />
+                    <CeldaVerificacion awb={a} verificada={auth === 'AUTORIZADO'} />
                   </Td>
                   <Td>
                     <EstadoChip a={a} />
@@ -309,27 +313,28 @@ export default function GuiasSimpleTable({
       </div>
     </div>
 
-    {verificacionAwb && (
-      <VerificacionModal awb={verificacionAwb} onClose={() => setVerificacionAwb(null)} />
+    {/* Portales a document.body para que los modales queden centrados en
+        pantalla aunque la tabla viva dentro de un panel split (vista 3). */}
+    {volanteAwb && createPortal(
+      <VolanteModal awb={volanteAwb} onClose={() => setVolanteAwb(null)} />,
+      document.body
     )}
-    {volanteAwb && (
-      <VolanteModal awb={volanteAwb} onClose={() => setVolanteAwb(null)} />
-    )}
-    {actaAwb && (
+    {actaAwb && createPortal(
       <ActaMalEstadoModal
         acta={actaAwb.acta_mal_estado}
         awb={actaAwb.awb}
         onClose={() => setActaAwb(null)}
-      />
+      />,
+      document.body
     )}
     </>
   );
 }
 
-// Chip de estado de la guía. Solo dos colores (ver `estadoGuia`):
-//   amarillo + círculo animado → el hito ya empezó (en curso, requiere atención)
-//   verde → hito previo terminado y el siguiente aún no inicia (al día)
-//   verde con check → ENTREGADA (terminal)
+// Chip de estado de la guía. Tres variantes (ver `estadoGuia`):
+//   faltante  — gris + ícono "?"
+//   entregada — verde + check (terminal: despacho completado)
+//   hito      — chip neutro con el nombre del hito donde está la guía
 function EstadoChip({ a }) {
   const e = estadoGuia(a);
   if (e.tone === 'faltante') {
@@ -340,26 +345,18 @@ function EstadoChip({ a }) {
       </span>
     );
   }
-  if (e.tone === 'amarillo') {
+  if (e.tone === 'entregada') {
     return (
-      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wide bg-amber-50 text-amber-700">
-        <span className="relative flex h-2 w-2 shrink-0">
-          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75" />
-          <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500" />
-        </span>
+      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wide bg-emerald-50 text-emerald-700">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
+          <polyline points="20 6 9 17 4 12" />
+        </svg>
         {e.label}
       </span>
     );
   }
   return (
-    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wide bg-emerald-50 text-emerald-700">
-      {e.terminal ? (
-        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
-          <polyline points="20 6 9 17 4 12" />
-        </svg>
-      ) : (
-        <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
-      )}
+    <span className="inline-flex items-center px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wide bg-slate-100 text-slate-600 border border-slate-200">
       {e.label}
     </span>
   );
@@ -385,7 +382,7 @@ function CeldaCarga({ bultos, kgs, highlight = false, faltaBultos = 0 }) {
         )}
       </span>
       <span className="text-[11px] text-slate-400 font-medium">
-        {(kgs ?? 0).toLocaleString('es-PE', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}
+        {(kgs ?? 0).toLocaleString('es-PE', { minimumFractionDigits: 1, maximumFractionDigits: 1, useGrouping: false })}
       </span>
     </div>
   );
@@ -416,7 +413,7 @@ function CeldaMalEstado({ n, acta, onAbrir }) {
   );
 }
 
-// Aviso de llegada: si fue enviado → chip clickeable que abre el volante
+// Aviso de llegada: si fue enviado → chip "Sí" clickeable que abre el volante
 // (conciliación + PDF); si no → guion gris no interactivo.
 function CeldaAviso({ enviado, onAbrir }) {
   if (!enviado) return <span className="text-slate-300 text-[12px] font-bold">—</span>;
@@ -425,7 +422,7 @@ function CeldaAviso({ enviado, onAbrir }) {
       type="button"
       onClick={onAbrir}
       className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md border border-blue-200 bg-blue-50 text-navy hover:bg-blue-100 hover:border-blue-300 transition"
-      title="Ver aviso de llegada (volante)"
+      title="Ver volante de aviso de llegada"
     >
       <span className="text-[12px] font-bold">Sí</span>
       <IconDoc size={13} />
@@ -433,20 +430,139 @@ function CeldaAviso({ enviado, onAbrir }) {
   );
 }
 
-// Verificación aduanera: mismo patrón que Aviso. Si está verificada → chip
-// "Sí" clickeable que abre el detalle (hora + DAM); si no → guion gris.
-function CeldaVerificacion({ verificada, onAbrir }) {
+// Verificación aduanera: si está verificada → chip "Sí" que al hover muestra
+// un tooltip con hora + DAM (mismo patrón que el tooltip de iconos de alerta);
+// si no → guion gris. No abre modal: la info es corta y se ve mejor inline.
+function CeldaVerificacion({ awb, verificada }) {
+  const [rect, setRect] = useState(null);
   if (!verificada) return <span className="text-slate-300 text-[12px] font-bold">—</span>;
   return (
-    <button
-      type="button"
-      onClick={onAbrir}
-      className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md border border-emerald-200 bg-emerald-50 text-ok hover:bg-emerald-100 hover:border-emerald-300 transition"
-      title="Ver verificación aduanera"
+    <>
+      <span
+        className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md border border-emerald-200 bg-emerald-50 text-ok cursor-help"
+        onClick={(e) => e.stopPropagation()}
+        onMouseEnter={(e) => setRect(e.currentTarget.getBoundingClientRect())}
+        onMouseLeave={() => setRect(null)}
+      >
+        <span className="text-[12px] font-bold">Sí</span>
+        <IconDoc size={13} />
+      </span>
+      {rect && createPortal(
+        <VerificacionTooltip awb={awb} anchorRect={rect} />,
+        document.body
+      )}
+    </>
+  );
+}
+
+// Tooltip flotante de verificación aduanera. Se auto-posiciona:
+//   1) prefiere abajo del chip; si no entra (filas cerca del borde inferior
+//      de la ventana), se voltea hacia arriba.
+//   2) clampea horizontalmente para no salirse por izquierda/derecha.
+//   3) el caret apunta al chip desde el lado correcto (top/bottom).
+// Mide el tooltip tras renderizarlo (useLayoutEffect) para calcular la
+// orientación con la altura real, no estimada.
+function VerificacionTooltip({ awb, anchorRect }) {
+  const ref = useRef(null);
+  const [pos, setPos] = useState(null);
+  const hora = formatFechaHora(horaVerificacion(awb));
+
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const W = 256;
+    const h = el.offsetHeight;
+    const margen = 8;
+    const espacioAbajo = window.innerHeight - anchorRect.bottom;
+    const espacioArriba = anchorRect.top;
+    // Si abajo no entra y arriba sí, volteamos. Si ninguno entra, elegimos
+    // el lado con más espacio.
+    const arriba =
+      espacioAbajo < h + margen && (espacioArriba >= h + margen || espacioArriba > espacioAbajo);
+    const top = arriba ? anchorRect.top - h - margen : anchorRect.bottom + margen;
+    const left = Math.min(Math.max(8, anchorRect.left + anchorRect.width / 2 - W / 2), window.innerWidth - W - 8);
+    setPos({ top, left, arriba });
+  }, [anchorRect]);
+
+  // Caret centrado bajo el chip, clampeado al ancho del tooltip.
+  const caretLeft = pos
+    ? Math.min(Math.max(10, anchorRect.left + anchorRect.width / 2 - pos.left - 6), 256 - 16)
+    : 0;
+
+  return (
+    <div
+      ref={ref}
+      style={{
+        position: 'fixed',
+        top: pos?.top ?? -9999,
+        left: pos?.left ?? 0,
+        zIndex: 80,
+        visibility: pos ? 'visible' : 'hidden',
+      }}
+      className="pointer-events-none w-64 bg-slate-900 text-white rounded-lg shadow-2xl ring-1 ring-black/10 px-3 py-2.5"
     >
-      <span className="text-[12px] font-bold">Sí</span>
-      <IconDoc size={13} />
-    </button>
+      <span
+        className="absolute w-3 h-3 rotate-45 bg-slate-900"
+        style={{
+          left: caretLeft,
+          top: pos?.arriba ? undefined : -6,
+          bottom: pos?.arriba ? -6 : undefined,
+        }}
+      />
+      <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-emerald-300 font-bold mb-2">
+        <IconDoc size={12} />
+        Verificación Aduanera
+      </div>
+      <div className="space-y-2">
+        <div>
+          <div className="text-[9px] uppercase tracking-wide text-slate-400 font-semibold">
+            Hora de verificación
+          </div>
+          <div className="text-[12px] font-bold tabular-nums leading-tight mt-0.5">
+            {hora || <span className="text-slate-500 font-normal">— sin registrar —</span>}
+          </div>
+        </div>
+        <div>
+          <div className="text-[9px] uppercase tracking-wide text-slate-400 font-semibold">
+            Documento de salida
+          </div>
+          <div className="text-[12px] font-bold tabular-nums leading-tight mt-0.5">
+            {awb.dam || <span className="text-slate-500 font-normal">— sin registrar —</span>}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Hora de verificación = fecha del último subevento de aduanas completado.
+// Fallback al último evento de todo el timeline para que nunca quede vacío
+// en una guía ya verificada.
+function horaVerificacion(awb) {
+  const tl = awb.timeline || {};
+  const ultima = (subs) => {
+    const f = (subs || [])
+      .filter((s) => s.estado === 'COMPLETADO' && s.fecha)
+      .map((s) => s.fecha);
+    return f.length ? f.reduce((a, b) => (new Date(a) > new Date(b) ? a : b)) : null;
+  };
+  return ultima(tl.aduanas?.subeventos) || ultima(Object.values(tl).flatMap((sec) => sec?.subeventos || []));
+}
+
+function formatFechaHora(iso) {
+  if (!iso) return null;
+  const d = new Date(iso);
+  const pad = (n) => String(n).padStart(2, '0');
+  return `${pad(d.getDate())}/${pad(d.getMonth() + 1)} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+function IconDoc({ size = 15 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+      <path d="M14 2v6h6" />
+      <path d="M9 13h6M9 17h4" />
+    </svg>
   );
 }
 
@@ -476,7 +592,7 @@ function alertasDeGuia(a) {
   if (esFaltante)
     out.push({ tipo: 'faltantes', color: 'text-slate-500', dark: 'text-slate-300', label: 'Faltante', desc: 'Guía manifestada que no arribó al terminal.' });
   if (a.canal_dam?.color === 'ROJO' && a.canal_dam?.con_levante === false)
-    out.push({ tipo: 'inmov', color: 'text-orange-600', dark: 'text-orange-300', label: 'Inmovilizada', desc: 'Canal rojo sin levante: carga retenida por aduanas.' });
+    out.push({ tipo: 'inmov', color: 'text-orange-600', dark: 'text-orange-300', label: 'Inmovilizada', desc: 'Sin autorización de salida: requiere levante.' });
   if ((a.bultos_mal_estado || 0) > 0)
     out.push({ tipo: 'mal_estado', color: 'text-danger', dark: 'text-red-300', label: 'Mal estado', desc: `${a.bultos_mal_estado} bulto(s) arribaron con daño (ver acta).` });
   if (!esFaltante && (a.bultos_faltantes || 0) > 0)
@@ -526,20 +642,52 @@ function EstadoFilaIcono({ a, entregada }) {
 }
 
 // Tooltip flotante (portal) que lista cada alerta con su icono, nombre y una
-// descripción corta. Posición fija anclada a los iconos para no recortarse con
-// el scroll de la tabla.
+// descripción corta. Misma lógica de auto-orientación que VerificacionTooltip:
+// se voltea hacia arriba si no entra abajo (filas al pie de la ventana), y
+// clampea horizontalmente. Mide la altura tras el primer render para decidir
+// el lado con la altura real.
 function IconosTooltip({ alertas, anchorRect }) {
-  const top = anchorRect.bottom + 8;
-  const left = Math.min(Math.max(8, anchorRect.left), window.innerWidth - 280);
+  const ref = useRef(null);
+  const [pos, setPos] = useState(null);
+
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const W = 256;
+    const h = el.offsetHeight;
+    const margen = 8;
+    const espacioAbajo = window.innerHeight - anchorRect.bottom;
+    const espacioArriba = anchorRect.top;
+    const arriba =
+      espacioAbajo < h + margen && (espacioArriba >= h + margen || espacioArriba > espacioAbajo);
+    const top = arriba ? anchorRect.top - h - margen : anchorRect.bottom + margen;
+    const left = Math.min(Math.max(8, anchorRect.left + anchorRect.width / 2 - W / 2), window.innerWidth - W - 8);
+    setPos({ top, left, arriba });
+  }, [anchorRect]);
+
+  const caretLeft = pos
+    ? Math.min(Math.max(10, anchorRect.left + anchorRect.width / 2 - pos.left - 6), 256 - 16)
+    : 0;
+
   return (
     <div
-      style={{ position: 'fixed', top, left, zIndex: 80 }}
+      ref={ref}
+      style={{
+        position: 'fixed',
+        top: pos?.top ?? -9999,
+        left: pos?.left ?? 0,
+        zIndex: 80,
+        visibility: pos ? 'visible' : 'hidden',
+      }}
       className="pointer-events-none w-64 bg-slate-900 text-white rounded-lg shadow-2xl ring-1 ring-black/10 px-3 py-2.5"
     >
-      {/* Caret */}
       <span
-        className="absolute -top-1.5 w-3 h-3 rotate-45 bg-slate-900"
-        style={{ left: Math.min(Math.max(10, anchorRect.left - left + 8), 230) }}
+        className="absolute w-3 h-3 rotate-45 bg-slate-900"
+        style={{
+          left: caretLeft,
+          top: pos?.arriba ? undefined : -6,
+          bottom: pos?.arriba ? -6 : undefined,
+        }}
       />
       <div className="text-[10px] uppercase tracking-wider text-slate-400 font-bold mb-2">
         {alertas.length === 1 ? 'Alerta de la guía' : `${alertas.length} alertas de la guía`}

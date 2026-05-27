@@ -24,10 +24,19 @@ const AEROLINEAS = [
 const ATLAS = AEROLINEAS[1];
 const LATAM = AEROLINEAS[0];
 
-const ORIGENES = [
-  'PVG', 'HKG', 'CAN', 'MIA', 'JFK', 'LAX',
-  'MAD', 'AMS', 'CDG', 'NRT', 'ICN', 'GRU',
-];
+// Realidad operativa courier TEMU: solo 2 rutas habituales hacia LIM.
+//   ATLAS  → 5Y 8102 / 5Y 8676, origen DFW (Dallas)
+//   LATAM  → LA 2695 / LA 2481, origen MIA (Miami)
+const VUELOS_POR_AEROLINEA = {
+  '5Y': { origen: 'DFW', numeros: ['8102', '8676'] },
+  LA:   { origen: 'MIA', numeros: ['2695', '2481'] },
+};
+
+// Rango de guías manifestadas por vuelo según aerolínea (tamaño operativo real).
+const MANIFIESTO_POR_AEROLINEA = {
+  '5Y': { min: 40, max: 45 },
+  LA:   { min: 10, max: 15 },
+};
 
 const AGENTES = [
   'GAMARRA AIR CARGO Y CIA S.A.C.',
@@ -60,7 +69,7 @@ const CAPITANES = [
 
 // Prefijo de pais (ISO) por aeropuerto de origen, para el puerto de zarpe.
 const PAIS_POR_ORIGEN = {
-  MIA: 'US', JFK: 'US', LAX: 'US',
+  MIA: 'US', DFW: 'US', JFK: 'US', LAX: 'US',
   MAD: 'ES', AMS: 'NL', CDG: 'FR',
   PVG: 'CN', HKG: 'HK', CAN: 'CN',
   GRU: 'BR', NRT: 'JP', ICN: 'KR',
@@ -128,10 +137,53 @@ function buildSubeventosRecepcion(start) {
   };
 }
 
+// Igual que buildSubeventosRecepcion pero con inicio y fin anclados a tiempos
+// dados (se usa para que el cierre del vuelo caiga en la ventana realista
+// 5h30–6h30 desde ATA).
+function buildSubeventosRecepcionAnchored(t0, t2) {
+  const totalMs = t2.getTime() - t0.getTime();
+  const t1 = new Date(t0.getTime() + Math.floor(totalMs * 0.4));
+  return {
+    estado: 'COMPLETADO',
+    fecha_inicio: isoOffset(t0),
+    fecha_fin: isoOffset(t2),
+    subeventos: [
+      { nombre: 'Generacion de turno', fecha: isoOffset(t0), estado: 'COMPLETADO' },
+      { nombre: 'En dique', fecha: isoOffset(t1), estado: 'COMPLETADO' },
+      { nombre: 'Inspeccion visual', fecha: isoOffset(t2), estado: 'COMPLETADO' },
+    ],
+    fin: t2,
+  };
+}
+
 function buildSubeventosTarja(start, bultos, diferencias = 0) {
   const t0 = start;
   const t1 = addMinutos(t0, RND.int(30, 75));
   const t2 = addMinutos(t1, RND.int(10, 30));
+  const contados = bultos - diferencias;
+  return {
+    estado: 'COMPLETADO',
+    fecha_inicio: isoOffset(t0),
+    fecha_fin: isoOffset(t2),
+    subeventos: [
+      { nombre: 'Inicio tarja', fecha: isoOffset(t0), estado: 'COMPLETADO' },
+      { nombre: 'Conteo de bultos', fecha: isoOffset(t1), estado: 'COMPLETADO', detalle: { contados, esperados: bultos } },
+      {
+        nombre: 'Diferencias detectadas',
+        fecha: isoOffset(t2),
+        estado: diferencias > 0 ? 'ACTIVA' : 'COMPLETADO',
+        detalle: { diferencias },
+      },
+    ],
+    fin: t2,
+  };
+}
+
+// Versión anclada: la tarja termina exactamente en t2. Sirve para que el
+// max(tarja.fecha_fin) del vuelo (= cierre) caiga donde queremos.
+function buildSubeventosTarjaAnchored(t0, t2, bultos, diferencias = 0) {
+  const totalMs = t2.getTime() - t0.getTime();
+  const t1 = new Date(t0.getTime() + Math.floor(totalMs * 0.75));
   const contados = bultos - diferencias;
   return {
     estado: 'COMPLETADO',
@@ -351,9 +403,11 @@ function generarAwb(i, escenario, alertasOut, vueloShared) {
     };
   }
 
-  // Timeline
-  const tRecepcion = buildSubeventosRecepcion(addMinutos(eta, RND.int(10, 30)));
-  let tTarja, tAlmacen, tAduanas, tDespacho;
+  // Timeline. Si el vuelo planeó su cierre (vuelos pasados), cada guía recibe
+  // un tarjaEndOffsetMin desde ETA. La tarja se ancla a ese fin y recepción se
+  // reconstruye hacia atrás. Así el max(tarja.fecha_fin) del vuelo cae en la
+  // ventana realista 5h30–6h30 desde ATA (que es la regla del negocio).
+  let tRecepcion, tTarja, tAlmacen, tAduanas, tDespacho;
 
   // Diferencias en tarja (faltan bultos en la guia): solo escenario PARCIAL.
   const diferenciaBultos = escenario === 'PARCIAL' ? RND.int(2, 12) : 0;
@@ -362,7 +416,23 @@ function generarAwb(i, escenario, alertasOut, vueloShared) {
     kgsRecibidos = Number((kgsEsperados * (bultosRecibidos / bultosEsperados)).toFixed(2));
   }
 
-  tTarja = buildSubeventosTarja(addMinutos(tRecepcion.fin, RND.int(10, 30)), bultosEsperados, diferenciaBultos);
+  if (vueloShared.ataAnchorOffsetMin != null && escenario !== 'EN_PROCESO') {
+    // Forward anchor: recepción arranca exactamente en ETA + offset (= ATA del vuelo).
+    tRecepcion = buildSubeventosRecepcion(addMinutos(eta, vueloShared.ataAnchorOffsetMin));
+    tTarja = buildSubeventosTarja(addMinutos(tRecepcion.fin, RND.int(10, 30)), bultosEsperados, diferenciaBultos);
+  } else if (vueloShared.tarjaEndOffsetMin != null && escenario !== 'EN_PROCESO') {
+    // Backward anchor: tarja termina exactamente en ETA + offset. Recepción
+    // se reconstruye hacia atrás (siempre cae después de ATA por el safeMin).
+    const tarjaEnd = addMinutos(eta, vueloShared.tarjaEndOffsetMin);
+    const tarjaStart = addMinutos(tarjaEnd, -RND.int(40, 105));
+    const recepcionEnd = addMinutos(tarjaStart, -RND.int(10, 30));
+    const recepcionStart = addMinutos(recepcionEnd, -RND.int(35, 90));
+    tRecepcion = buildSubeventosRecepcionAnchored(recepcionStart, recepcionEnd);
+    tTarja = buildSubeventosTarjaAnchored(tarjaStart, tarjaEnd, bultosEsperados, diferenciaBultos);
+  } else {
+    tRecepcion = buildSubeventosRecepcion(addMinutos(eta, RND.int(10, 30)));
+    tTarja = buildSubeventosTarja(addMinutos(tRecepcion.fin, RND.int(10, 30)), bultosEsperados, diferenciaBultos);
+  }
 
   if (escenario === 'INMOVILIZACION') {
     // Inmovilizada por aduanas: canal ROJO sin levante. Llega completa,
@@ -618,16 +688,19 @@ function escenarioParaVuelo(vuelo) {
     if (r < 0.90) return 'MAL_ESTADO';
     return 'GUIA_FALTANTE';
   }
+  // Vuelos pasados (AYER_MIX y anteriores): NO incluir EN_PROCESO porque sus
+  // guías deben tener tarja completada para que el vuelo se considere cerrado.
+  // Las alertas que sí cierran tarja (INMOV / MAL_ESTADO / PARCIAL) y los
+  // FALTANTE (que se confirman implícitamente con el último tarjar) sí entran.
   if (vuelo.escenarioVuelo === 'AYER_MIX') {
     const r = Math.random();
-    if (r < 0.60) return 'DESPACHADO_A_ESEER';
-    if (r < 0.70) return 'EN_PROCESO';
-    if (r < 0.79) return 'PARCIAL';
-    if (r < 0.87) return 'INMOVILIZACION';
-    if (r < 0.95) return 'MAL_ESTADO';
+    if (r < 0.65) return 'DESPACHADO_A_ESEER';
+    if (r < 0.75) return 'PARCIAL';
+    if (r < 0.85) return 'INMOVILIZACION';
+    if (r < 0.93) return 'MAL_ESTADO';
     return 'GUIA_FALTANTE';
   }
-  // Pasados antiguos: mayoria despachados, con algunas alertas residuales
+  // Pasados antiguos: mayoría despachados, alertas residuales.
   const r = Math.random();
   if (r < 0.80) return 'DESPACHADO_A_ESEER';
   if (r < 0.86) return 'PARCIAL';
@@ -636,9 +709,16 @@ function escenarioParaVuelo(vuelo) {
   return 'GUIA_FALTANTE';
 }
 
+// El vuelo debe estar "cerrado" si ya pasó (no es de hoy). Los de hoy
+// (planificado o en proceso) quedan sin cierre planificado para mostrar el
+// estado vivo en el tablero.
+function vueloDebeCerrarse(escenarioVuelo) {
+  return escenarioVuelo !== 'PLANIFICADO' && escenarioVuelo !== 'EN_PROCESO_HOY';
+}
+
 // Duracion aproximada de vuelo hacia LIM por aeropuerto de origen (horas).
 const DURACION_VUELO_H = {
-  MIA: 6, JFK: 8, LAX: 8.5, GRU: 5,
+  MIA: 6, DFW: 7.5, JFK: 8, LAX: 8.5, GRU: 5,
   MAD: 12, AMS: 14, CDG: 13,
   PVG: 26, HKG: 25, CAN: 26, NRT: 22, ICN: 23,
 };
@@ -656,44 +736,55 @@ function matriculaAvion(aeroCode) {
 }
 
 /**
- * 10 vuelos fijos: 1 en vuelo (llega hoy en la tarde), 1 hoy ya en proceso,
- * 8 pasados. 3 LATAM en dias alternos — el resto ATLAS.
- * El primer vuelo se programa para que el cronometro de demo (08:45) lo
- * capture a mitad de ruta y se vea el tracker de posicion.
+ * 10 vuelos fijos: 1 programado (llega hoy en la tarde), 1 hoy ya en proceso,
+ * 8 pasados. Mezcla ATLAS/LATAM en días alternos. El número de vuelo y el
+ * origen vienen de VUELOS_POR_AEROLINEA — la realidad operativa courier es
+ * ATLAS DFW (8102/8676) y LATAM MIA (2695/2481).
+ * El primer vuelo se programa para que el cronómetro de demo lo capture a
+ * mitad de ruta y se vea el tracker de posición.
  */
 function generarVuelos10() {
   const PLAN = [
-    { diaOffset:  0, aero: ATLAS, hora: [14, 45], esc: 'PLANIFICADO',   origen: 'MAD' },
-    { diaOffset:  0, aero: ATLAS, hora: [ 4, 15], esc: 'EN_PROCESO_HOY', origen: 'MIA' },
-    { diaOffset: -1, aero: ATLAS, hora: [ 5,  0], esc: 'AYER_MIX',        origen: 'JFK' },
-    { diaOffset: -2, aero: LATAM, hora: [22, 40], esc: null,             origen: 'PVG' },
-    { diaOffset: -3, aero: ATLAS, hora: [ 3, 20], esc: null,             origen: 'MIA' },
-    { diaOffset: -4, aero: LATAM, hora: [22, 15], esc: null,             origen: 'HKG' },
-    { diaOffset: -5, aero: ATLAS, hora: [ 4, 45], esc: null,             origen: 'LAX' },
-    { diaOffset: -6, aero: LATAM, hora: [22,  0], esc: null,             origen: 'PVG' },
-    { diaOffset: -7, aero: ATLAS, hora: [ 3, 50], esc: null,             origen: 'MIA' },
-    { diaOffset: -8, aero: ATLAS, hora: [ 5, 20], esc: null,             origen: 'JFK' },
+    { diaOffset:  0, aero: ATLAS, hora: [14, 45], esc: 'PLANIFICADO'    },
+    { diaOffset:  0, aero: ATLAS, hora: [ 4, 15], esc: 'EN_PROCESO_HOY' },
+    { diaOffset: -1, aero: LATAM, hora: [ 5,  0], esc: 'AYER_MIX'       },
+    { diaOffset: -2, aero: ATLAS, hora: [22, 40], esc: null             },
+    { diaOffset: -3, aero: LATAM, hora: [ 3, 20], esc: null             },
+    { diaOffset: -4, aero: ATLAS, hora: [22, 15], esc: null             },
+    { diaOffset: -5, aero: LATAM, hora: [ 4, 45], esc: null             },
+    { diaOffset: -6, aero: ATLAS, hora: [22,  0], esc: null             },
+    { diaOffset: -7, aero: LATAM, hora: [ 3, 50], esc: null             },
+    { diaOffset: -8, aero: ATLAS, hora: [ 5, 20], esc: null             },
   ];
 
+  // Contadores por aerolínea para rotar entre los 2 números de vuelo posibles
+  // (ATLAS 8102/8676, LATAM 2695/2481) de forma determinística.
+  const contador = { '5Y': 0, LA: 0 };
+
   return PLAN.map((p, i) => {
+    const code = p.aero.code;
+    const { origen, numeros } = VUELOS_POR_AEROLINEA[code];
+    const numeroVueloCorto = numeros[contador[code] % numeros.length];
+    contador[code]++;
+
     const eta = new Date(HOY.getTime() + p.diaOffset * 24 * 60 * 60 * 1000);
     eta.setHours(p.hora[0], p.hora[1], 0, 0);
-    const duracionH = DURACION_VUELO_H[p.origen] || 8;
+    const duracionH = DURACION_VUELO_H[origen] || 8;
     const fechaSalidaOrigen = new Date(eta.getTime() - duracionH * 60 * 60 * 1000);
     // Hito Aerolinea: la numeracion del manifiesto y la incorporacion de guias
     // ocurren antes del vuelo. Numeracion primero, luego incorporacion.
     const fechaNumeracion = new Date(eta.getTime() - RND.int(4, 7) * 24 * 60 * 60 * 1000);
     const fechaIncorporacion = new Date(eta.getTime() - RND.int(1, 3) * 24 * 60 * 60 * 1000);
-    const numeroVuelo = `${p.aero.code} ${pad(RND.int(100, 9999), 4)}`;
-    const matricula = matriculaAvion(p.aero.code);
+    const numeroVuelo = `${code} ${numeroVueloCorto}`;
+    const matricula = matriculaAvion(code);
     const manifiestoCarga = {
       numero_manifiesto: `2026-${pad(20100 + i * 7, 5)}`,
-      codigo_transportista: p.aero.code,
+      codigo_transportista: code,
       capitan: RND.pick(CAPITANES),
       identidad_capitan: `PAS-${pad(RND.int(100000, 999999), 6)}`,
       matricula,
       tipo_medio_transporte: `${pad(RND.int(100, 999), 3)}Y`,
-      puerto_zarpe: `${PAIS_POR_ORIGEN[p.origen] || 'XX'}${p.origen}`,
+      puerto_zarpe: `${PAIS_POR_ORIGEN[origen] || 'XX'}${origen}`,
       tipo_lugar_descarga: '88',
       lugar_descarga: '3507',
       puerto_intermedio: null,
@@ -703,17 +794,18 @@ function generarVuelos10() {
       fecha_numeracion: isoOffset(fechaNumeracion),
       fecha_incorporacion_guias: isoOffset(fechaIncorporacion),
     };
+    const manRange = MANIFIESTO_POR_AEROLINEA[code];
     return {
       aero: p.aero,
       vuelo: numeroVuelo,
       manifiesto: `2026-${pad(20100 + i * 7, 5)}`,
-      origen: p.origen,
+      origen,
       eta,
       fechaSalidaOrigen,
       matricula,
       manifiestoCarga,
-      tipoVuelo: p.aero.code === '5Y' ? 'CAO' : RND.pick(['PAX', 'CAO']),
-      cantidadAwbs: RND.int(8, 14),
+      tipoVuelo: code === '5Y' ? 'CAO' : RND.pick(['PAX', 'CAO']),
+      cantidadAwbs: RND.int(manRange.min, manRange.max),
       escenarioVuelo: p.esc,
     };
   });
@@ -726,8 +818,58 @@ function main() {
   const vuelos = generarVuelos10();
   let i = 1;
   for (const v of vuelos) {
+    // Para vuelos pasados (cerrados): planeamos el cierre del vuelo en la
+    // ventana realista 5h30–6h30 desde ATA. Esquema:
+    //   - Una guía actúa de "ancla ATA": su recepción arranca en ETA + 10 min
+    //     (ATA del vuelo). Se construye hacia adelante.
+    //   - El resto se anclan por su tarjaEnd. El MAYOR de ellos define el
+    //     cierre del vuelo (la "última guía tarjada que confirma faltantes").
+    //   - Los offsets garantizan que ninguna recepción arranque antes que ATA.
+    const escenarios = [];
     for (let j = 0; j < v.cantidadAwbs; j++) {
-      awbs.push(generarAwb(i, escenarioParaVuelo(v), alertas, v));
+      escenarios.push(escenarioParaVuelo(v));
+    }
+    const ataAnchors = new Array(v.cantidadAwbs).fill(null);
+    const tarjaOffsets = new Array(v.cantidadAwbs).fill(null);
+
+    if (vueloDebeCerrarse(v.escenarioVuelo)) {
+      const cierreFromAta = RND.int(330, 390); // 5h30 – 6h30
+      const ataOffset = 10;                    // ATA = ETA + 10 min
+      const cierreFromEta = ataOffset + cierreFromAta;
+      // Piso para anclas por tarjaEnd: chain dur máx (35+30+105=170) + ATA.
+      // 235 garantiza recepción >= ETA + 10 incluso con la mayor duración.
+      const safeMin = 235;
+
+      // Primera guía no-FALTANTE: ancla ATA (forward).
+      let ataIdx = escenarios.findIndex((e) => e !== 'GUIA_FALTANTE');
+      if (ataIdx < 0) ataIdx = 0;
+      ataAnchors[ataIdx] = ataOffset;
+
+      // El resto (no FALTANTE, no ancla ATA): anclados por tarjaEnd.
+      const candidatos = [];
+      for (let j = 0; j < v.cantidadAwbs; j++) {
+        if (j === ataIdx) continue;
+        if (escenarios[j] === 'GUIA_FALTANTE') continue;
+        tarjaOffsets[j] = ataOffset + RND.int(safeMin, cierreFromAta);
+        candidatos.push(j);
+      }
+      // Forzar que el MAX coincida con cierreFromEta (cierre exacto del vuelo).
+      if (candidatos.length > 0) {
+        let maxIdx = candidatos[0];
+        for (const idx of candidatos) {
+          if (tarjaOffsets[idx] > tarjaOffsets[maxIdx]) maxIdx = idx;
+        }
+        tarjaOffsets[maxIdx] = cierreFromEta;
+      }
+    }
+
+    for (let j = 0; j < v.cantidadAwbs; j++) {
+      const vueloShared = {
+        ...v,
+        ataAnchorOffsetMin: ataAnchors[j],
+        tarjaEndOffsetMin: tarjaOffsets[j],
+      };
+      awbs.push(generarAwb(i, escenarios[j], alertas, vueloShared));
       i++;
     }
   }

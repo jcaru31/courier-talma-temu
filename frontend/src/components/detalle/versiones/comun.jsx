@@ -1,8 +1,10 @@
 import { useState } from 'react';
+import { createPortal } from 'react-dom';
 import EtapaIcono from '../../vuelos/EtapaIconos.jsx';
 import AlertasEtiquetas from '../AlertasEtiquetas.jsx';
 import ActaMalEstadoModal from '../../inventario/ActaMalEstadoModal.jsx';
 import VolanteModal from '../../vuelos/VolanteModal.jsx';
+import { alertaHandlingPendiente } from '../../../utils/handlingAlerta.js';
 
 /**
  * Bloques de UI compartidos por las 3 variantes de la Vista 3 (detalle de
@@ -28,7 +30,7 @@ export function fmtHora(iso) {
 }
 export function fmtNum(n) {
   if (n == null) return '—';
-  return n.toLocaleString('es-PE', { minimumFractionDigits: 2 });
+  return n.toLocaleString('es-PE', { minimumFractionDigits: 1, maximumFractionDigits: 1, useGrouping: false });
 }
 
 /* ------------------------------------------------------------------ */
@@ -51,37 +53,66 @@ export const SUB_META = {
 };
 
 /* ------------------------------------------------------------------ */
-/* Datos de la guía (pills)                                            */
+/* Ficha de la guía: Datos + Detalle de carga en un único contenedor   */
 /* ------------------------------------------------------------------ */
-export function DatosGuiaCard({ awb }) {
+export function FichaGuiaCard({ awb }) {
   // Acta de mal estado: si la guía la tiene, la etiqueta "Mal estado" abre el
   // modal con el acta (datos + fotos + PDF).
   const [actaAbierta, setActaAbierta] = useState(false);
   const campos = [
     { label: 'Shipper', value: awb.shipper },
-    { label: 'Fecha de emisión', value: fmtFechaHora(awb.fecha_emision), mono: true },
-    { label: 'Tipo almacén', value: awb.tipo_almacenamiento },
-    { label: 'Agente de carga', value: awb.agente_carga },
-    { label: 'Volante', value: awb.volante, mono: true },
-    { label: 'RUC consignatario', value: awb.consignatario?.ruc, mono: true },
+    { label: 'Contenido', value: awb.tipo_almacenamiento },
+    { label: 'Fecha de emisión de volante', value: fmtFechaHora(awb.fecha_emision), mono: true },
+  ];
+  // "Parcial" es derivado (no viene en alertas_activas): la guía arribó con
+  // menos bultos de lo manifestado pero sí llegó.
+  const esParcial =
+    awb.status !== 'GUIA_FALTANTE' && (awb.bultos_faltantes || 0) > 0;
+  const alertas = [
+    ...(awb.alertas_activas || []),
+    ...(esParcial
+      ? [{
+          id: 'parcial',
+          tipo: 'PARCIAL',
+          motivo: `Arribó con ${awb.bultos_faltantes} bulto(s) menos de lo manifestado.`,
+        }]
+      : []),
   ];
   return (
     <div className="card p-4 h-full">
-      <div className="flex items-center gap-2 mb-3 flex-wrap">
+      {/* Cabecera: título + alertas (incluye Pago Handling pendiente) */}
+      <div className="flex items-center justify-between gap-3 mb-3 flex-wrap">
         <span className="label-xs">Datos de la guía</span>
-        <AlertasEtiquetas
-          alertas={awb.alertas_activas}
-          onMalEstado={awb.acta_mal_estado ? () => setActaAbierta(true) : null}
-        />
+        <div className="flex items-center gap-1.5 flex-wrap justify-end">
+          {alertaHandlingPendiente(awb) && (
+            <span
+              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md border border-fuchsia-300 bg-fuchsia-50 text-fuchsia-700 text-[10px] font-bold uppercase tracking-wider"
+              title="Pago de Handling pendiente"
+            >
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="9" />
+                <path d="M12 6v12" />
+                <path d="M16 9c0-1.5-1.8-2.5-4-2.5s-4 1-4 2.5 1.8 2 4 2.5 4 1 4 2.5-1.8 2.5-4 2.5-4-1-4-2.5" />
+              </svg>
+              Pago Handling pendiente
+            </span>
+          )}
+          <AlertasEtiquetas
+            alertas={alertas}
+            onMalEstado={awb.acta_mal_estado ? () => setActaAbierta(true) : null}
+          />
+        </div>
       </div>
-      {actaAbierta && (
+      {actaAbierta && createPortal(
         <ActaMalEstadoModal
           acta={awb.acta_mal_estado}
           awb={awb.awb}
           onClose={() => setActaAbierta(false)}
-        />
+        />,
+        document.body
       )}
-      <div className="grid grid-cols-2 lg:grid-cols-3 gap-2.5">
+      {/* Pills compactos (3 campos) */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
         {campos.map((c) => (
           <div key={c.label} className="rounded-lg bg-slate-50 border border-slate-100 px-3 py-2 flex flex-col leading-tight">
             <span className="text-[10px] uppercase tracking-wide text-slate-400 font-semibold">{c.label}</span>
@@ -91,16 +122,11 @@ export function DatosGuiaCard({ awb }) {
           </div>
         ))}
       </div>
-    </div>
-  );
-}
 
-/* ------------------------------------------------------------------ */
-/* Carga (barras de progreso)                                          */
-/* ------------------------------------------------------------------ */
-export function CargaCard({ awb }) {
-  return (
-    <div className="card p-4 h-full">
+      {/* Separador interno */}
+      <div className="border-t border-slate-100 my-3.5" />
+
+      {/* Detalle de carga (mismo contenedor) */}
       <div className="label-xs mb-3 flex items-center gap-1.5">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-slate-400">
           <path d="M21 16V8a2 2 0 0 0-1-1.7l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.7l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z" />
@@ -108,22 +134,10 @@ export function CargaCard({ awb }) {
         </svg>
         Detalle de carga
       </div>
-      <BarraCarga label="Bultos" rec={awb.bultos_recibidos} man={awb.bultos_esperados} />
-      <div className="mt-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <BarraCarga label="Bultos" rec={awb.bultos_recibidos} man={awb.bultos_esperados} />
         <BarraCarga label="Kilos" rec={awb.kgs_recibidos} man={awb.kgs_esperados} format={fmtNum} />
       </div>
-      {awb.handling_pagado === false && (
-        <div className="mt-3 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-fuchsia-50 border border-fuchsia-300 text-fuchsia-700">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
-            <circle cx="12" cy="12" r="9" />
-            <path d="M12 6v12" />
-            <path d="M16 9c0-1.5-1.8-2.5-4-2.5s-4 1-4 2.5 1.8 2 4 2.5 4 1 4 2.5-1.8 2.5-4 2.5-4-1-4-2.5" />
-          </svg>
-          <span className="text-[10px] font-bold uppercase tracking-wider leading-tight">
-            Pago Handling pendiente
-          </span>
-        </div>
-      )}
     </div>
   );
 }
@@ -220,17 +234,22 @@ export function HitosStrip({ hitos, selectedKey, onSelect }) {
 /* ------------------------------------------------------------------ */
 export function EventoItem({ subevento, awb = null }) {
   const { nombre, fecha, estado, detalle, ocultarFecha } = subevento;
-  const meta = SUB_META[estado] || SUB_META.PENDIENTE;
+  // A nivel ACTIVIDAD el estado es binario: se hizo o no. Cualquier EN_CURSO
+  // del backend se proyecta a PENDIENTE acá — el matiz "en curso" solo vive
+  // en el indicador del HITO (los 5 círculos arriba), nunca en la actividad.
+  const estadoBinario = estado === 'EN_CURSO' ? 'PENDIENTE' : estado;
+  const meta = SUB_META[estadoBinario] || SUB_META.PENDIENTE;
+  const fechaVisible = estadoBinario === 'PENDIENTE' ? null : fecha;
   // Emisión / Envío de Volante completado → botón que abre el modal del volante
   // (aviso de llegada + conciliación + PDF). Requiere el awb del contexto.
   const [volanteAbierto, setVolanteAbierto] = useState(false);
-  const esVolante = awb && /volante/i.test(nombre) && estado === 'COMPLETADO';
+  const esVolante = awb && /volante/i.test(nombre) && estadoBinario === 'COMPLETADO';
   return (
     <div className={`rounded-lg border border-slate-200 border-l-4 bg-white px-3.5 py-2.5 ${meta.border}`}>
       <div className="flex items-start justify-between gap-2">
         <span className={`text-[13px] font-semibold leading-tight ${meta.title}`}>{nombre}</span>
-        {!ocultarFecha && (
-          <span className="text-[11px] text-slate-400 tabular-nums shrink-0">{fmtHora(fecha)}</span>
+        {!ocultarFecha && fechaVisible && (
+          <span className="text-[11px] text-slate-400 tabular-nums shrink-0">{fmtHora(fechaVisible)}</span>
         )}
       </div>
       {detalle && (
@@ -245,7 +264,7 @@ export function EventoItem({ subevento, awb = null }) {
       )}
       <div className="mt-1.5 flex items-center justify-between gap-2 flex-wrap">
         <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded border text-[10px] font-bold uppercase tracking-wide ${meta.pill}`}>
-          <EstadoIcono estado={estado} />
+          <EstadoIcono estado={estadoBinario} />
           {meta.label}
         </span>
         {esVolante && (
@@ -260,8 +279,9 @@ export function EventoItem({ subevento, awb = null }) {
           </button>
         )}
       </div>
-      {volanteAbierto && (
-        <VolanteModal awb={awb} onClose={() => setVolanteAbierto(false)} />
+      {volanteAbierto && createPortal(
+        <VolanteModal awb={awb} onClose={() => setVolanteAbierto(false)} />,
+        document.body
       )}
     </div>
   );

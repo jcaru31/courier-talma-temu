@@ -78,22 +78,23 @@ export function countdownArribo(v) {
  * se pinte "en curso" si todavía no arrancó (p. ej. vuelo en el aire → la
  * recepción aún no inicia).
  *
- * Un hito está "iniciado" cuando realmente empezó a trabajarse:
- *   - Trasmisión Aerolínea (idx 0): siempre (el manifiesto ya se numeró).
- *   - Recepción (idx 1): cuando llega carga al almacén (bultosRecibidos > 0).
- *   - Resto: cuando el hito anterior ya tiene al menos una guía completada.
+ * Regla binaria (alineada con la trazabilidad del detalle):
+ *   - 'verde': todas las guías del denominador del hito ya lo pasaron
+ *   - 'gris': cualquier otro caso (no hay estado intermedio "en curso")
  *
- * @param {number[]} completados  guías que pasaron cada hito (orden de los 5 hitos)
- * @param {number}   total        guías recibidas (denominador, sin faltantes)
- * @param {number}   bultosRecibidos  bultos recibidos del vuelo
- * @returns {('verde'|'amarillo'|'gris')[]}
+ * El denominador puede variar por hito: Aerolínea cuenta sobre manifestadas
+ * (incluye faltantes), el resto sobre efectivas. Por eso recibimos los totales
+ * individuales y comparamos cada `completados[i]` contra su propio `totales[i]`.
+ *
+ * @param {number[]} completados  guías que tocaron cada hito
+ * @param {number[]} totales      denominador de cada hito (mismo largo)
+ * @returns {('verde'|'gris')[]}
  */
-export function tonoHitos(completados, total, bultosRecibidos) {
+export function tonoHitos(completados, totales) {
   return completados.map((c, i) => {
     if (i === 0) return 'verde'; // aerolínea: manifiesto numerado, siempre completo
-    if (total > 0 && c >= total) return 'verde'; // todas las recibidas lo pasaron
-    const iniciado = i === 1 ? (bultosRecibidos || 0) > 0 : completados[i - 1] > 0;
-    return iniciado ? 'amarillo' : 'gris';
+    const t = totales[i];
+    return t > 0 && c >= t ? 'verde' : 'gris';
   });
 }
 

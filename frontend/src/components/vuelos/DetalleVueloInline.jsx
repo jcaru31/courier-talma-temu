@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useVueloDetail } from '../../hooks/useVuelos.js';
+import { alertaHandlingPendiente } from '../../utils/handlingAlerta.js';
 import GuiasSimpleTable from './GuiasSimpleTable.jsx';
 import DetalleVueloHeader from './DetalleVueloHeader.jsx';
 import AwbDetalleModal from '../detalle/AwbDetalleModal.jsx';
@@ -12,12 +13,13 @@ import AwbDetalleModal from '../detalle/AwbDetalleModal.jsx';
  * los totales de bultos/kilos del vuelo.
  */
 // Grupo de estados (estado_tracking) por cada nodo seleccionable. El nodo
-// representa "el estado en que se encuentra la guía", así que filtrar por él
-// trae exactamente las guías en ese estado — sin importar si el hito está
-// completo o pendiente. Las faltantes NO entran en Recepción (nunca arribaron:
-// quedaron en Trasmisión Aerolínea); se filtran por su propia alerta.
-// Debe coincidir con el conteo de los nodos de la trazabilidad.
+// representa el HITO ACTUAL de la guía, así que filtrar por él trae las guías
+// que están en ese hito (su 1ra actividad ya se completó pero no han pasado
+// al siguiente). Las faltantes NO entran en Recepción — quedaron en Trasmisión
+// Aerolínea y se filtran por su propia alerta. Las entregadas siguen en
+// DESPACHO (el check verde es solo un flag visual, no un estado aparte).
 const ETAPA_A_ESTADOS = {
+  aerolinea: ['TRASMISION_AEROLINEA'],
   recepcion: ['MANIFESTADO'],
   transmisiones: ['TRANSMISIONES'],
   facturacion: ['FACTURACION'],
@@ -25,6 +27,7 @@ const ETAPA_A_ESTADOS = {
 };
 
 const LABEL_ETAPA = {
+  aerolinea: 'En Trasmisión Aerolínea',
   recepcion: 'En Recepción',
   transmisiones: 'En Trasmisión Almacén',
   facturacion: 'En Facturación',
@@ -77,7 +80,7 @@ export default function DetalleVueloInline({
     } else if (alertaActiva === 'mal_estado') {
       lista = lista.filter((a) => (a.bultos_mal_estado || 0) > 0);
     } else if (alertaActiva === 'handling') {
-      lista = lista.filter((a) => a.handling_pagado === false);
+      lista = lista.filter(alertaHandlingPendiente);
     }
     return lista;
   }, [vuelo, etapaActiva, alertaActiva]);
@@ -92,7 +95,7 @@ export default function DetalleVueloInline({
   // guías del vuelo aún tienen handling pendiente para mostrarlo como chip.
   const handlingPendientes = useMemo(() => {
     if (!vuelo?.awbs) return 0;
-    return vuelo.awbs.filter((a) => a.handling_pagado === false).length;
+    return vuelo.awbs.filter(alertaHandlingPendiente).length;
   }, [vuelo]);
 
   if (loading) {
@@ -169,6 +172,7 @@ export default function DetalleVueloInline({
         alturaMaxima="45vh"
         alturaMinima="0px"
         fill={fillHeight}
+        preAta={!vuelo.sla?.ata}
       />
 
       {awbSeleccionado && (
@@ -193,7 +197,7 @@ function Metric({ label, rec, man }) {
 
 function formatKg(n) {
   if (n == null) return '—';
-  return n.toLocaleString('es-PE', { minimumFractionDigits: 2 });
+  return n.toLocaleString('es-PE', { minimumFractionDigits: 1, maximumFractionDigits: 1, useGrouping: false });
 }
 
 // Icono dedicado para "handling pendiente de pago" — moneda con $. Color

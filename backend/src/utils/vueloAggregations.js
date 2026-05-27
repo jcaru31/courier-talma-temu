@@ -3,34 +3,77 @@
  * y Vista 2 (detalle vuelo con mini-trazabilidad).
  */
 
-function pasoAerolinea() {
+// === Lógica de HITO ACTUAL ===
+// Una guía está EN un hito cuando la 1ra actividad de ese hito está
+// COMPLETADA. No usamos el estado intermedio EN_CURSO de subeventos para
+// determinar avance: la regla es binaria (completado / no completado).
+// El "HITO ACTUAL" es el más profundo cuya 1ra actividad ya se completó.
+function primerSubevCompletado(bucket) {
+  const subs = bucket?.subeventos || [];
+  return subs[0]?.estado === 'COMPLETADO';
+}
+function subevCompletadoPorNombre(bucket, regex) {
+  const subs = bucket?.subeventos || [];
+  return subs.some((s) => regex.test(s.nombre || '') && s.estado === 'COMPLETADO');
+}
+
+function inicioAerolinea() {
   // La aerolinea numera el manifiesto e incorpora las guias antes del vuelo.
   // Toda guia que existe en el sistema ya fue incorporada al manifiesto.
   return true;
 }
-function pasoRecepcion(awb) {
-  // El hito Recepcion abarca la llegada al almacen y el termino de tarja.
-  return awb.timeline?.tarja?.estado === 'COMPLETADO';
+function inicioRecepcion(awb) {
+  // Entrada a Recepción = la carga llegó físicamente al almacén
+  // (`recepcion.fecha_inicio` registrado). Alineado con la 1ra actividad
+  // visible del hito en la vista detalle ("Llegada al almacén").
+  return !!awb.timeline?.recepcion?.fecha_inicio;
 }
-function pasoTransmisiones(awb) {
-  // Emision de volante + transmision de descarga + aviso de llegada.
-  return awb.timeline?.aduanas?.estado === 'COMPLETADO';
+function inicioTransmisiones(awb) {
+  // Entrada a Trasmisión Almacén = se transmitió la descarga de mercancía
+  // al sistema (1er subevento del bucket `aduanas`). Esto solo puede ocurrir
+  // después de terminar la tarja, así que naturalmente requiere Recepción
+  // completa. Alineado con la 1ra actividad visible del hito en la vista
+  // detalle ("Descarga de Mercancía").
+  return subevCompletadoPorNombre(
+    awb.timeline?.aduanas,
+    /transmision\s*de\s*descarga|descarga\s*de\s*mercancia/i,
+  );
 }
-function pasoFacturacion(awb) {
-  const subs = awb.timeline?.despacho_eseer?.subeventos || [];
-  return subs.some((s) => /facturacion/i.test(s.nombre) && s.estado === 'COMPLETADO');
+function inicioFacturacion(awb) {
+  // 1ra actividad de Facturación = "Facturacion handling" (1er subevento de
+  // `despacho_eseer`).
+  return primerSubevCompletado(awb.timeline?.despacho_eseer);
 }
-function pasoDespacho(awb) {
-  return awb.timeline?.despacho_eseer?.estado === 'COMPLETADO';
+function inicioDespacho(awb) {
+  // 1ra actividad de Despacho = "Generacion de turno": cuando se genera el
+  // turno del transportista (con VCT listo). El "Ingreso de transportista"
+  // es la siguiente actividad, no la 1ra — un turno puede estar generado
+  // horas antes de que el camión efectivamente entre al almacén.
+  return subevCompletadoPorNombre(awb.timeline?.despacho_eseer, /generacion de turno/i);
+}
+// Última actividad del hito Despacho — entrega física de la carga al courier.
+// No es un hito en sí: marca a la guía como entregada (check verde en la UI)
+// pero mantiene su HITO ACTUAL = DESPACHO.
+function awbEntregada(awb) {
+  return subevCompletadoPorNombre(awb.timeline?.despacho_eseer, /entrega de carga/i);
 }
 
 const ETAPAS = [
-  { key: 'aerolinea', label: 'Trasmisión Aerolínea', test: pasoAerolinea },
-  { key: 'recepcion', label: 'Recepción', test: pasoRecepcion },
-  { key: 'transmisiones', label: 'Trasmisión Almacén', test: pasoTransmisiones },
-  { key: 'facturacion', label: 'Facturación', test: pasoFacturacion },
-  { key: 'despacho', label: 'Despacho', test: pasoDespacho },
+  { key: 'aerolinea',     label: 'Trasmisión Aerolínea' },
+  { key: 'recepcion',     label: 'Recepción' },
+  { key: 'transmisiones', label: 'Trasmisión Almacén' },
+  { key: 'facturacion',   label: 'Facturación' },
+  { key: 'despacho',      label: 'Despacho' },
 ];
+
+// Orden numérico del HITO ACTUAL (matchea el índice en ETAPAS).
+const HITO_ORDEN = {
+  TRASMISION_AEROLINEA: 0,
+  MANIFESTADO:          1, // = en Recepción
+  TRANSMISIONES:        2,
+  FACTURACION:          3,
+  DESPACHO:             4,
+};
 
 function calcularTrazabilidad(awbs) {
   // Trasmision Aerolinea cubre TODAS las guias manifestadas: la aerolinea las
@@ -44,53 +87,70 @@ function calcularTrazabilidad(awbs) {
   const efectivos = awbs.filter((a) => a.status !== 'GUIA_FALTANTE');
   const totalEfectivos = efectivos.length;
 
-  return ETAPAS.map((etapa) => {
+  // Conteo CUMULATIVO: en cada hito sumamos las guías cuyo HITO ACTUAL es ese
+  // o uno posterior — están en el hito o ya lo superaron. La regla es la misma
+  // que usa la trazabilidad del detalle, así ambos niveles cuadran exactamente.
+  const ordenes = efectivos.map((a) => HITO_ORDEN[determinarEstadoTracking(a)] ?? -1);
+
+  return ETAPAS.map((etapa, idx) => {
     if (etapa.key === 'aerolinea') {
-      // pasoAerolinea() es true para toda guia manifestada (incluye faltantes).
       return {
         key: etapa.key,
         label: etapa.label,
-        completados: awbs.filter(etapa.test).length,
+        completados: totalManifestadas,
         total: totalManifestadas,
       };
     }
+    const completados = ordenes.filter((o) => o >= idx).length;
     return {
       key: etapa.key,
       label: etapa.label,
-      completados: efectivos.filter(etapa.test).length,
+      completados,
       total: totalEfectivos,
     };
   });
 }
 
-const SLA_THRESHOLD_MIN = 5 * 60 + 30; // 5h 30m
+// SLA de TALMA: 6h 30min desde ATA para "cerrar" el vuelo (todas las guías
+// tarjadas o confirmadas faltantes). Mientras está corriendo la responsabilidad
+// es de TALMA; al cerrarse pasa al Courier (gestión documental aguas abajo).
+const SLA_THRESHOLD_MIN = 6 * 60 + 30; // 6h 30m
+// Si el exceso supera esta ventana, el SLA se da por INCUMPLIDO: el contador
+// se congela en +EXCESO_MAX_MIN y deja de acumular, para que vuelos abandonados
+// no muestren contadores de +78h o más en el tablero.
+const EXCESO_MAX_MIN = 8 * 60; // 8h de exceso
 
-// Para demo: "ahora" simulado en lugar de Date.now() real. Lo dejo cercano al
-// limite SLA del vuelo de hoy para que el cronometro se vea trabajando.
-// "Ahora" del demo: solo el DÍA cambia con el shift; la hora-del-día se
+// Para demo: "ahora" simulado en lugar de Date.now() real. La hora-del-día se
 // mantiene fija (REF_HOUR en utils/time.js) para que los countdowns sean
 // estables y no dependan del reloj real del usuario.
 const { peruNow } = require('./time');
 const ahora = peruNow;
 
 /**
- * SLA = fin de la ultima transmision - ATA
- *  - ATA = arribo del primer AWB (inicio de recepcion)
- *  - fin_transmisiones = ultimo subevento "Transmision manifiesto" COMPLETADO
- *  - Si todos los AWBs (excepto faltantes) tienen transmision completada -> SLA fijo
- *  - Si aun no: cronometro corriendo (frontend hace tick)
- *  - Si > 330 min -> SLA fail
+ * SLA / cierre del vuelo.
+ *  - ATA              = arribo del primer AWB no-faltante (inicio de recepción)
+ *  - vuelo_cerrado    = todas las guías están tarjadas (timeline.tarja COMPLETADO)
+ *                       o son FALTANTE (confirmadas como no recibidas)
+ *  - cierre_iso       = max(tarja.fecha_fin) entre las no-faltantes — el momento
+ *                       en que TALMA terminó de procesar la última guía
+ *  - minutos_transcurridos = (cierre o ahora) − ATA, en minutos
+ *  - minutos_restantes = threshold − transcurridos (negativo = excedido)
+ *  - responsabilidad  = 'TALMA' mientras no esté cerrado; 'COURIER' al cerrar
+ *  - status           = NA | OK | WARN | FAIL
  */
 function calcularSlaVuelo(awbs) {
-  const efectivos = awbs.filter(
+  const noFaltantes = awbs.filter(
     (a) => a.status !== 'PLANIFICADO' && a.status !== 'GUIA_FALTANTE'
   );
 
-  if (efectivos.length === 0) {
+  if (noFaltantes.length === 0) {
     return {
       ata: null,
-      fin_transmisiones: null,
-      sla_minutos: null,
+      cierre_iso: null,
+      vuelo_cerrado: false,
+      responsabilidad: null,
+      minutos_transcurridos: null,
+      minutos_restantes: null,
       threshold_minutos: SLA_THRESHOLD_MIN,
       status: 'NA',
       corriendo: false,
@@ -98,58 +158,78 @@ function calcularSlaVuelo(awbs) {
   }
 
   let ata = null;
-  for (const awb of efectivos) {
+  for (const awb of noFaltantes) {
     const inicio = awb.timeline?.recepcion?.fecha_inicio;
     if (inicio && (!ata || new Date(inicio) < new Date(ata))) ata = inicio;
   }
   if (!ata) {
     return {
       ata: null,
-      fin_transmisiones: null,
-      sla_minutos: null,
+      cierre_iso: null,
+      vuelo_cerrado: false,
+      responsabilidad: null,
+      minutos_transcurridos: null,
+      minutos_restantes: null,
       threshold_minutos: SLA_THRESHOLD_MIN,
       status: 'NA',
       corriendo: false,
     };
   }
 
-  let conTransmision = 0;
-  let finTransmisiones = null;
-  for (const awb of efectivos) {
-    const subs = awb.timeline?.aduanas?.subeventos || [];
-    const trans = subs.find(
-      (s) => /transmision/i.test(s.nombre) && s.estado === 'COMPLETADO' && s.fecha
-    );
-    if (trans) {
-      conTransmision++;
-      if (!finTransmisiones || new Date(trans.fecha) > new Date(finTransmisiones)) {
-        finTransmisiones = trans.fecha;
+  // Cierre = todas las no-faltantes terminaron tarja. Para faltantes no se
+  // espera tarja: la confirmación es implícita (TALMA reportó que no llegaron).
+  let tarjadas = 0;
+  let cierreCalc = null;
+  for (const awb of noFaltantes) {
+    const tarja = awb.timeline?.tarja;
+    if (tarja?.estado === 'COMPLETADO' && tarja.fecha_fin) {
+      tarjadas++;
+      if (!cierreCalc || new Date(tarja.fecha_fin) > new Date(cierreCalc)) {
+        cierreCalc = tarja.fecha_fin;
       }
     }
   }
+  const vuelo_cerrado = tarjadas === noFaltantes.length;
 
-  const completo = conTransmision === efectivos.length;
   const minutosEntre = (a, b) => Math.max(0, Math.round((new Date(b) - new Date(a)) / 60000));
-  const sla_minutos = completo
-    ? minutosEntre(ata, finTransmisiones)
+  const minutos_transcurridos = vuelo_cerrado
+    ? minutosEntre(ata, cierreCalc)
     : minutosEntre(ata, ahora().toISOString());
+  const minutos_restantes = SLA_THRESHOLD_MIN - minutos_transcurridos;
+  const minutos_excedidos = Math.max(0, minutos_transcurridos - SLA_THRESHOLD_MIN);
+
+  // INCUMPLIDO: vuelo no cerrado y con más de 8h de exceso. Se da por
+  // abandonado en términos de SLA: el contador se congela y la UI debe
+  // mostrar el estado terminal "INCUMPLIDO" sin seguir sumando horas.
+  const incumplido = !vuelo_cerrado && minutos_excedidos >= EXCESO_MAX_MIN;
 
   let status;
-  if (completo) {
-    status = sla_minutos <= SLA_THRESHOLD_MIN ? 'OK' : 'FAIL';
+  if (vuelo_cerrado) {
+    status = minutos_transcurridos <= SLA_THRESHOLD_MIN ? 'OK' : 'FAIL';
+  } else if (incumplido) {
+    status = 'INCUMPLIDO';
+  } else if (minutos_transcurridos > SLA_THRESHOLD_MIN) {
+    status = 'FAIL';
+  } else if (minutos_transcurridos > SLA_THRESHOLD_MIN * 0.85) {
+    status = 'WARN';
   } else {
-    if (sla_minutos > SLA_THRESHOLD_MIN) status = 'FAIL';
-    else if (sla_minutos > SLA_THRESHOLD_MIN * 0.85) status = 'WARN';
-    else status = 'OK';
+    status = 'OK';
   }
 
   return {
     ata,
-    fin_transmisiones: completo ? finTransmisiones : null,
-    sla_minutos,
+    cierre_iso: vuelo_cerrado ? cierreCalc : null,
+    vuelo_cerrado,
+    responsabilidad: vuelo_cerrado ? 'COURIER' : 'TALMA',
+    minutos_transcurridos,
+    minutos_restantes,
+    minutos_excedidos,
     threshold_minutos: SLA_THRESHOLD_MIN,
+    exceso_max_minutos: EXCESO_MAX_MIN,
+    incumplido,
     status,
-    corriendo: !completo,
+    // Cronómetro: se detiene si el vuelo cerró o quedó incumplido.
+    corriendo: !vuelo_cerrado && !incumplido,
   };
 }
 
@@ -160,13 +240,25 @@ function calcularSlaVuelo(awbs) {
  * estado terminal es ENTREGADA — distinto de "en Despacho". Caso especial:
  * FALTANTE.
  */
+// HITO ACTUAL de la guía: el más profundo cuya 1ra actividad ya se completó.
+// La guía entra a un hito en cuanto su 1ra actividad pasa a COMPLETADA — no
+// se requiere que el hito anterior esté íntegramente terminado, así como no
+// se distingue "en curso" vs "completado" dentro del hito (esa granularidad
+// vive en la vista 3 de subeventos). El estado terminal ENTREGADA se eliminó:
+// una guía con despacho cerrado sigue teniendo HITO ACTUAL = DESPACHO y se
+// marca con el flag `entregada` para mostrar el check verde en la UI.
 function determinarEstadoTracking(awb) {
   if (awb.status === 'GUIA_FALTANTE') return 'FALTANTE';
-  if (!pasoRecepcion(awb)) return 'MANIFESTADO';
-  if (!pasoTransmisiones(awb)) return 'TRANSMISIONES';
-  if (!pasoFacturacion(awb)) return 'FACTURACION';
-  if (!pasoDespacho(awb)) return 'DESPACHO';
-  return 'ENTREGADA';
+  // Una guía inmovilizada (canal rojo sin levante) no puede pasar a Despacho
+  // aunque tenga turno generado: el transportista no la retira hasta que
+  // SUNAT libere. Queda anclada en Facturación.
+  const inmovilizada =
+    awb.canal_dam?.color === 'ROJO' && awb.canal_dam?.con_levante === false;
+  if (!inmovilizada && inicioDespacho(awb)) return 'DESPACHO';
+  if (inicioFacturacion(awb)) return 'FACTURACION';
+  if (inicioTransmisiones(awb)) return 'TRANSMISIONES';
+  if (inicioRecepcion(awb)) return 'MANIFESTADO';
+  return 'TRASMISION_AEROLINEA';
 }
 
 const AEROLINEA_SHORT = {
@@ -261,8 +353,6 @@ function agruparPorVuelo(awbs, alertas) {
     const uldEstimados = bultosEsperados > 0 ? Math.max(1, Math.ceil(bultosEsperados / 200)) : 0;
     const uldRecibidos = bultosRecibidos > 0 ? Math.max(1, Math.ceil(bultosRecibidos / 200)) : 0;
 
-    const transmisionAwbs = v.awbs.filter(pasoTransmisiones).length;
-
     // Status agregado del vuelo (ignora faltantes que no participan del proceso)
     const statuses = new Set(v.awbs.filter((a) => a.status !== 'GUIA_FALTANTE').map((a) => a.status));
     let status_vuelo;
@@ -299,7 +389,6 @@ function agruparPorVuelo(awbs, alertas) {
       kgs_esperados: Math.round(kgsEsperados * 100) / 100,
       kgs_recibidos: Math.round(kgsRecibidos * 100) / 100,
       avance_bultos_pct: bultosEsperados > 0 ? Math.round((bultosRecibidos / bultosEsperados) * 100) : 0,
-      transmision_pct: totalAwbs > 0 ? Math.round((transmisionAwbs / totalAwbs) * 100) : 0,
       uld_recibidos: uldRecibidos,
       uld_esperados: uldEstimados,
       guias_parciales: guiasParciales,
@@ -332,6 +421,7 @@ function detalleVuelo(awbs, alertas, manifiesto, clientes = []) {
       alertas_activas: alertasActivas,
       alertas_count: alertasActivas.length,
       estado_tracking: determinarEstadoTracking(a),
+      entregada: awbEntregada(a),
       estado_inventario: alertasActivas.find((al) => al.tipo === 'INMOVILIZACION')
         ? 'INMOVILIZADO'
         : alertasActivas.find((al) => al.tipo === 'MAL_ESTADO')

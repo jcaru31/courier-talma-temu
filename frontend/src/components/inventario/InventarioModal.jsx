@@ -359,7 +359,7 @@ function formatFechaHora(iso) {
 }
 function formatKg(n) {
   if (n == null) return '0';
-  return Number(n).toLocaleString('es-PE', { maximumFractionDigits: 0 });
+  return Number(n).toLocaleString('es-PE', { minimumFractionDigits: 1, maximumFractionDigits: 1, useGrouping: false });
 }
 
 function IconAlmacen() {

@@ -1,14 +1,11 @@
-import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAwbDetail } from '../hooks/useAwbDetail.js';
 import AwbDetalleContenido from '../components/detalle/AwbDetalleContenido.jsx';
-import ServiciosIntermediosModal from '../components/detalle/ServiciosIntermediosModal.jsx';
 
 export default function DetalleAWB() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { awb, loading, error, refetch } = useAwbDetail(id);
-  const [serviciosAbierto, setServiciosAbierto] = useState(false);
 
   const volverAlVuelo = () => {
     if (awb?.manifiesto) {
@@ -34,9 +31,17 @@ export default function DetalleAWB() {
             </svg>
             Volver al vuelo
           </button>
-          <h1 className="text-base font-semibold text-slate-700">
-            Tracking Importaciones {awb?.awb && <span className="text-slate-400 font-normal">— {awb.awb}</span>}
-          </h1>
+          <div className="flex flex-col leading-tight">
+            <h1 className="text-base font-semibold text-slate-700">
+              Tracking Importaciones {awb?.awb && <span className="text-slate-400 font-normal">— {awb.awb}</span>}
+            </h1>
+            {awb?.consignatario_nombre && (
+              <span className="text-[11px] text-slate-500 mt-0.5">
+                <span className="uppercase tracking-wide text-slate-400 font-semibold">Consignatario:</span>{' '}
+                <span className="font-bold text-slate-700">{awb.consignatario_nombre}</span>
+              </span>
+            )}
+          </div>
         </div>
         <div className="flex items-center gap-3">
           <button className="flex items-center gap-2 px-4 py-2 border border-ok text-ok rounded-md text-sm font-medium hover:bg-emerald-50">
@@ -47,20 +52,8 @@ export default function DetalleAWB() {
             Descargar
             <IconDownload />
           </button>
-          <button
-            onClick={() => setServiciosAbierto(true)}
-            disabled={!awb}
-            className="flex items-center gap-2 px-4 py-2 border border-navy text-navy rounded-md text-sm font-medium hover:bg-blue-50 disabled:opacity-50"
-          >
-            Servicios intermedios
-            <IconExternal />
-          </button>
         </div>
       </div>
-
-      {serviciosAbierto && awb && (
-        <ServiciosIntermediosModal awb={awb} onClose={() => setServiciosAbierto(false)} />
-      )}
 
       {/* Content */}
       {loading && (
@@ -86,13 +79,6 @@ function IconDownload() {
   return (
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
       <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3" />
-    </svg>
-  );
-}
-function IconExternal() {
-  return (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M7 17l9-9M17 17V8H8" />
     </svg>
   );
 }

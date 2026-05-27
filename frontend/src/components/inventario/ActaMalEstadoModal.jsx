@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 // Las fotos y el PDF se sirven via /actas/* (ver vite.config.js proxy +
 // backend/src/server.js static handler).
@@ -11,6 +11,7 @@ import { useEffect, useState } from 'react';
  */
 export default function ActaMalEstadoModal({ acta, awb, onClose }) {
   const [foto, setFoto] = useState(0);
+  const [grupoIdx, setGrupoIdx] = useState(0);
 
   // ESC cierra el modal.
   useEffect(() => {
@@ -19,11 +20,37 @@ export default function ActaMalEstadoModal({ acta, awb, onClose }) {
     return () => document.removeEventListener('keydown', onEsc);
   }, [onClose]);
 
+  // Grupos del acta: cada grupo es un conjunto de bultos con su propio tipo
+  // de daño, material, observación, etc. Una guía puede tener varios grupos
+  // (ver formato original del ACM SUNAT — códigos tipo 220204, 220185).
+  // Compatibilidad hacia atrás: si el acta solo tiene `descripcion` plana,
+  // lo envolvemos en un grupo único; el código del grupo se deriva de los
+  // últimos 6 dígitos del N° de acta (formato realista, estable entre renders).
+  // Cuando los datos traigan `descripcion.grupos` reales, el selector navega
+  // entre todos sin más cambios.
+  const grupos = useMemo(() => {
+    const gs = acta?.descripcion?.grupos;
+    if (Array.isArray(gs) && gs.length > 0) return gs;
+    if (!acta) return [];
+    const codigo = String(acta.numero_acta || '').replace(/\D/g, '').slice(-6) || '000001';
+    return [{
+      numero: codigo,
+      bultos: acta.totales?.bultos_mal_estado,
+      tipo_bulto: acta.descripcion?.tipo_bulto,
+      material_envase: acta.descripcion?.material_envase,
+      tipo_dano: acta.descripcion?.tipo_dano,
+      accion_tomada: acta.descripcion?.accion_tomada,
+      motivo: acta.descripcion?.motivo,
+      observaciones: acta.descripcion?.observaciones,
+    }];
+  }, [acta]);
+
   if (!acta) return null;
   const fotos = acta.fotos || [];
   const total = fotos.length;
   const prev = () => setFoto((i) => (i - 1 + total) % total);
   const next = () => setFoto((i) => (i + 1) % total);
+  const grupo = grupos[grupoIdx] || grupos[0];
 
   return (
     <div
@@ -42,11 +69,11 @@ export default function ActaMalEstadoModal({ acta, awb, onClose }) {
           </div>
           <div className="flex-1 min-w-0">
             <div className="text-[10px] uppercase tracking-wider text-muted font-semibold">
-              Acta de carga en mal estado
+              Mal estado
             </div>
             <h2 className="text-base font-bold text-slate-800 leading-tight">
-              N° {acta.numero_acta}
-              {awb && <span className="text-slate-400 font-normal"> · {awb}</span>}
+              Acta N° <span className="tabular-nums">{acta.numero_acta}</span>
+              {awb && <span className="text-slate-400 font-normal"> · Guía {awb}</span>}
             </h2>
           </div>
           <a
@@ -66,20 +93,12 @@ export default function ActaMalEstadoModal({ acta, awb, onClose }) {
           </button>
         </div>
 
-        {/* Body scrollable */}
+        {/* Body scrollable. Jerarquía: totales arriba (lo crítico),
+            descripción + galería lado a lado (aprovecha el ancho), y
+            metadatos administrativos como tira sutil al pie. */}
         <div className="flex-1 overflow-y-auto p-5 space-y-4">
-          {/* Cabecera del acta — campos administrativos */}
-          <div className="grid grid-cols-6 gap-3 rounded-md border border-border bg-slate-50 p-3">
-            <Campo label="Manifiesto" value={acta.manifiesto} mono />
-            <Campo label="Fecha ingreso" value={formatFecha(acta.fecha_ingreso)} mono />
-            <Campo label="Vuelo" value={acta.vuelo} mono />
-            <Campo label="Guía Madre" value={acta.guia_madre} mono />
-            <Campo label="Guía Hija" value={acta.guia_hija} mono />
-            <Campo label="N° Detalle" value={acta.n_detalle} mono />
-          </div>
-
-          {/* Totales: bultos y peso (rec / mal / buen) */}
-          <div className="grid grid-cols-6 gap-3">
+          {/* 1) Totales — full width, lo primero que el usuario ve */}
+          <div className="grid grid-cols-3 lg:grid-cols-6 gap-3">
             <Stat label="Total bultos"      value={acta.totales.bultos_total} />
             <Stat label="Mal estado"        value={acta.totales.bultos_mal_estado} tone="danger" />
             <Stat label="Buen estado"       value={acta.totales.bultos_buen_estado} tone="ok" />
@@ -88,82 +107,176 @@ export default function ActaMalEstadoModal({ acta, awb, onClose }) {
             <Stat label="Peso buen estado"  value={fmtKg(acta.totales.peso_buen_estado)} suffix="kg" tone="ok" />
           </div>
 
-          {/* Descripción del daño */}
-          <div className="rounded-md border border-border bg-white p-4">
-            <div className="text-[10px] uppercase tracking-wider text-muted font-semibold mb-2">
-              Descripción del contenido
-            </div>
-            <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm">
-              <Linea label="Consignatario"      value={acta.consignatario} />
-              <Linea label="Contenido manif."   value={acta.contenido_manifestado} />
-              <Linea label="Tipo de bulto"      value={acta.descripcion.tipo_bulto} />
-              <Linea label="Material envase"    value={acta.descripcion.material_envase} />
-              <Linea label="Tipo de daño"       value={acta.descripcion.tipo_dano} tone="danger" />
-              <Linea label="Acción tomada"      value={acta.descripcion.accion_tomada} />
-              <Linea label="Motivo"             value={acta.descripcion.motivo} />
-            </div>
-            {acta.descripcion.observaciones && (
-              <div className="mt-3 pt-3 border-t border-border">
-                <div className="text-[10px] uppercase tracking-wider text-muted font-semibold mb-1">
-                  Observaciones
-                </div>
-                <p className="text-sm text-slate-700 leading-relaxed">
-                  {acta.descripcion.observaciones}
-                </p>
-              </div>
-            )}
-          </div>
-
-          {/* Carrusel de fotos */}
-          {total > 0 && (
-            <div className="rounded-md border border-border bg-white overflow-hidden">
-              <div className="px-4 py-2 border-b border-border flex items-center justify-between">
+          {/* 2) Descripción + Galería lado a lado en desktop. En mobile,
+              stack vertical (descripción arriba). */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            {/* Descripción del daño. Contenido manifestado es global del acta;
+                el resto pertenece al grupo activo. El selector de grupos vive
+                arriba — cada grupo describe un conjunto de bultos con su
+                propio tipo de daño, observación, etc. */}
+            <div className="rounded-md border border-border bg-white p-4 min-w-0">
+              <div className="flex items-center justify-between gap-2 mb-2">
                 <div className="text-[10px] uppercase tracking-wider text-muted font-semibold">
-                  Fotos del estado de la guía
+                  Descripción del contenido
                 </div>
-                <div className="text-[11px] text-slate-500 tabular-nums">
-                  {foto + 1} / {total}
-                </div>
-              </div>
-              <div className="relative bg-slate-100 flex items-center justify-center" style={{ height: 380 }}>
-                <FotoVisor src={`${fotos[foto]}`} alt={`Foto ${foto + 1}`} />
-                {total > 1 && (
-                  <>
-                    <button
-                      onClick={prev}
-                      className="absolute left-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/90 border border-border shadow-sm hover:bg-white flex items-center justify-center text-slate-700"
-                      aria-label="Anterior"
-                    >
-                      <IconChevron dir="left" />
-                    </button>
-                    <button
-                      onClick={next}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/90 border border-border shadow-sm hover:bg-white flex items-center justify-center text-slate-700"
-                      aria-label="Siguiente"
-                    >
-                      <IconChevron dir="right" />
-                    </button>
-                  </>
+                {grupos.length > 0 && (
+                  <div className="text-[10px] text-slate-400 tabular-nums">
+                    {grupos.length === 1 ? '1 grupo' : `${grupoIdx + 1} / ${grupos.length} grupos`}
+                  </div>
                 )}
               </div>
-              {/* Thumbnails */}
-              <div className="flex items-center justify-center gap-2 px-4 py-3 bg-slate-50 border-t border-border">
-                {fotos.map((src, i) => (
+              <Linea label="Contenido manif." value={acta.contenido_manifestado} />
+
+              {/* Selector de grupos: pills horizontales con scroll si son muchos.
+                  Cada pill = un grupo con su propio daño. Habilitadas todas. */}
+              <div className="mt-3 -mx-1 px-1 flex items-center gap-1.5 overflow-x-auto">
+                <span className="text-[9px] uppercase tracking-wider text-slate-400 font-semibold mr-1 shrink-0">
+                  Grupo
+                </span>
+                {grupos.map((g, i) => (
                   <button
                     key={i}
-                    onClick={() => setFoto(i)}
-                    className={`w-12 h-12 rounded border-2 overflow-hidden bg-slate-200 transition ${
-                      i === foto ? 'border-navy shadow-sm' : 'border-transparent hover:border-slate-300'
+                    type="button"
+                    onClick={() => setGrupoIdx(i)}
+                    className={`px-2.5 py-1 rounded-md text-[11px] font-bold tabular-nums transition shrink-0 ${
+                      i === grupoIdx
+                        ? 'bg-navy text-white shadow-sm'
+                        : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                     }`}
-                    aria-label={`Ver foto ${i + 1}`}
+                    title={`Ver descripción del grupo ${g.numero || i + 1}`}
                   >
-                    <FotoVisor src={`${src}`} alt={`Miniatura ${i + 1}`} thumb />
+                    {g.numero || i + 1}
+                    {g.bultos != null && (
+                      <span className={`ml-1.5 text-[9px] font-semibold ${i === grupoIdx ? 'opacity-80' : 'opacity-60'}`}>
+                        · {g.bultos} blt
+                      </span>
+                    )}
                   </button>
                 ))}
               </div>
+
+              <div className="mt-3 grid grid-cols-1 gap-y-2 text-sm">
+                <Linea label="Tipo de bulto"      value={grupo?.tipo_bulto} />
+                <Linea label="Material envase"    value={grupo?.material_envase} />
+                <Linea label="Tipo de daño"       value={grupo?.tipo_dano} tone="danger" />
+                <Linea label="Acción tomada"      value={grupo?.accion_tomada} />
+                <Linea label="Motivo"             value={grupo?.motivo} />
+              </div>
+              {grupo?.observaciones && (
+                <div className="mt-3 pt-3 border-t border-border">
+                  <div className="text-[10px] uppercase tracking-wider text-muted font-semibold mb-1">
+                    Observaciones
+                  </div>
+                  <p className="text-sm text-slate-700 leading-relaxed">
+                    {grupo.observaciones}
+                  </p>
+                </div>
+              )}
             </div>
-          )}
+
+            {/* Galería tipo carrusel: track con todas las fotos, traslada con
+                transform según `foto`. Soporta wrap (next desde la última →
+                primera) y wrap inverso (prev desde 0 → última). */}
+            {total > 0 && (
+              <CarruselFotos fotos={fotos} foto={foto} setFoto={setFoto} prev={prev} next={next} />
+            )}
+          </div>
+
         </div>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Carrusel de fotos. Mantiene todas las imágenes montadas en un track
+ * horizontal (`flex w-full`); el cambio entre fotos es un `translateX(-N*100%)`
+ * con transición CSS — animación fluida, sin recargar imágenes ni recortes.
+ * Pre-carga la siguiente y la anterior para que el slide sea instantáneo.
+ */
+function CarruselFotos({ fotos, foto, setFoto, prev, next }) {
+  const total = fotos.length;
+  return (
+    <div className="rounded-md border border-border bg-white overflow-hidden flex flex-col min-w-0">
+      <div className="px-4 py-2 border-b border-border flex items-center justify-between">
+        <div className="text-[10px] uppercase tracking-wider text-muted font-semibold">
+          Fotos del estado de la guía
+        </div>
+        <div className="text-[11px] text-slate-500 tabular-nums">
+          {foto + 1} / {total}
+        </div>
+      </div>
+      {/* Viewport del carrusel: overflow-hidden recorta lo que sobresale, el
+          track desliza dentro. Fórmula confiable: track con width = N×100% del
+          viewport; cada slide width = 100/N% del track (= 100% del viewport).
+          translateX(-i × 100/N %) avanza al slide i con la animación. */}
+      <div className="relative bg-slate-100 overflow-hidden" style={{ height: 320 }}>
+        <div
+          className="flex h-full transition-transform duration-500"
+          style={{
+            width: `${total * 100}%`,
+            transform: `translate3d(-${foto * (100 / total)}%, 0, 0)`,
+            transitionTimingFunction: 'cubic-bezier(0.22, 1, 0.36, 1)',
+          }}
+        >
+          {fotos.map((src, i) => (
+            <div
+              key={i}
+              className="h-full flex items-center justify-center px-2"
+              style={{ width: `${100 / total}%` }}
+            >
+              <FotoVisor src={src} alt={`Foto ${i + 1}`} />
+            </div>
+          ))}
+        </div>
+        {total > 1 && (
+          <>
+            <button
+              onClick={prev}
+              className="absolute left-2 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-white/90 border border-border shadow-sm hover:bg-white flex items-center justify-center text-slate-700"
+              aria-label="Anterior"
+            >
+              <IconChevron dir="left" />
+            </button>
+            <button
+              onClick={next}
+              className="absolute right-2 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-white/90 border border-border shadow-sm hover:bg-white flex items-center justify-center text-slate-700"
+              aria-label="Siguiente"
+            >
+              <IconChevron dir="right" />
+            </button>
+          </>
+        )}
+        {/* Dots indicators centrados en la base del viewport */}
+        {total > 1 && total <= 8 && (
+          <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1.5">
+            {fotos.map((_, i) => (
+              <button
+                key={i}
+                onClick={() => setFoto(i)}
+                aria-label={`Ir a foto ${i + 1}`}
+                className={`h-1.5 rounded-full transition-all ${
+                  i === foto ? 'w-5 bg-white shadow' : 'w-1.5 bg-white/60 hover:bg-white/90'
+                }`}
+              />
+            ))}
+          </div>
+        )}
+      </div>
+      {/* Thumbnails con scroll horizontal si son muchas. */}
+      <div className="flex items-center gap-2 px-3 py-2.5 bg-slate-50 border-t border-border overflow-x-auto">
+        {fotos.map((src, i) => (
+          <button
+            key={i}
+            onClick={() => setFoto(i)}
+            className={`w-11 h-11 rounded border-2 overflow-hidden bg-slate-200 transition shrink-0 ${
+              i === foto ? 'border-navy shadow-sm' : 'border-transparent hover:border-slate-300'
+            }`}
+            aria-label={`Ver foto ${i + 1}`}
+          >
+            <FotoVisor src={src} alt={`Miniatura ${i + 1}`} thumb />
+          </button>
+        ))}
       </div>
     </div>
   );
@@ -187,19 +300,6 @@ function FotoVisor({ src, alt, thumb = false }) {
       onError={() => setErr(true)}
       className={thumb ? 'w-full h-full object-cover' : 'max-h-full max-w-full object-contain'}
     />
-  );
-}
-
-function Campo({ label, value, mono = false }) {
-  return (
-    <div className="flex flex-col leading-tight">
-      <span className="text-[9px] uppercase tracking-wider text-slate-400 font-semibold">
-        {label}
-      </span>
-      <span className={`text-[12px] font-bold text-slate-800 mt-0.5 ${mono ? 'tabular-nums' : ''}`}>
-        {value ?? '—'}
-      </span>
-    </div>
   );
 }
 
@@ -234,13 +334,7 @@ function Linea({ label, value, tone = 'default' }) {
 
 function fmtKg(n) {
   if (n == null) return '—';
-  return Number(n).toLocaleString('es-PE', { minimumFractionDigits: 1, maximumFractionDigits: 2 });
-}
-function formatFecha(iso) {
-  if (!iso) return '—';
-  const d = new Date(iso);
-  const pad = (n) => String(n).padStart(2, '0');
-  return `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()}`;
+  return Number(n).toLocaleString('es-PE', { minimumFractionDigits: 1, maximumFractionDigits: 1, useGrouping: false });
 }
 
 function IconWarning() {
