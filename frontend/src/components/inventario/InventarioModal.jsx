@@ -121,13 +121,7 @@ export default function InventarioModal({ abierto, onClose }) {
                 Guías en almacén
               </h2>
               <div className="text-[11px] text-slate-500 font-medium">
-                <span className="tabular-nums font-bold text-slate-700">{base.length}</span> guías con
-                1+ día en almacén
-                {data.total > base.length && (
-                  <span className="text-slate-400">
-                    {' '}· {data.total - base.length} ingresada{data.total - base.length === 1 ? '' : 's'} hoy
-                  </span>
-                )}
+                <span className="tabular-nums font-bold text-slate-700">{base.length}</span> guías en almacén
               </div>
             </div>
             <button

@@ -3,6 +3,7 @@ import Sidebar from './components/layout/Sidebar.jsx';
 import AvanceVuelos from './pages/AvanceVuelos.jsx';
 import DetalleVuelo from './pages/DetalleVuelo.jsx';
 import DetalleAWB from './pages/DetalleAWB.jsx';
+import SimulacionVuelo from './pages/SimulacionVuelo.jsx';
 import { InventarioModalProvider } from './context/InventarioModalContext.jsx';
 
 export default function App() {
@@ -16,6 +17,7 @@ export default function App() {
             <Route path="/vuelos" element={<AvanceVuelos />} />
             <Route path="/vuelos/:manifiesto" element={<DetalleVuelo />} />
             <Route path="/awb/:id" element={<DetalleAWB />} />
+            <Route path="/simulacion" element={<SimulacionVuelo />} />
           </Routes>
         </main>
       </div>

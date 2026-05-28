@@ -10,6 +10,7 @@ const vuelosRoutes = require('./routes/vuelos.routes');
 const inventarioRoutes = require('./routes/inventario.routes');
 const alertasRoutes = require('./routes/alertas.routes');
 const notificacionesRoutes = require('./routes/notificaciones.routes');
+const simulacionRoutes = require('./routes/simulacion.routes');
 
 const app = express();
 
@@ -35,6 +36,7 @@ app.use('/api/vuelos', vuelosRoutes);
 app.use('/api/inventario', inventarioRoutes);
 app.use('/api/alertas', alertasRoutes);
 app.use('/api/notificaciones', notificacionesRoutes);
+app.use('/api/simulacion', simulacionRoutes);
 
 // API no encontrada → JSON (no debe caer en el fallback del frontend).
 app.use('/api', (req, res) => {

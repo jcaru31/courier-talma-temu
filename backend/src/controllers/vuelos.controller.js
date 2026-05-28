@@ -101,12 +101,13 @@ async function list(req, res, next) {
       else if (t === 'inmov') vuelos = vuelos.filter((v) => v.guias_con_inmov > 0);
       else if (t === 'mal_estado') vuelos = vuelos.filter((v) => v.guias_con_mal_estado > 0);
     }
-    // Filtro de dia. Por defecto: ultimos 7 dias incluyendo hoy.
+    // Filtro de dia. Por defecto: ayer + hoy (vista compacta para no saturar).
     // fecha_desde / fecha_hasta tienen prioridad sobre 'dia'.
-    const dia = req.query.dia || 'ultimos7';
+    const dia = req.query.dia || 'hoy_ayer';
     const manana = offsetDia(HOY, 1);
+    const ayer = offsetDia(HOY, -1);
     const hace7 = offsetDia(HOY, -7);
-    let rango = { desde: hace7, hasta: HOY };
+    let rango = { desde: ayer, hasta: HOY };
 
     const fechaDesde = req.query.fecha_desde;
     const fechaHasta = req.query.fecha_hasta;
@@ -130,6 +131,12 @@ async function list(req, res, next) {
         return f < HOY && f >= hace7;
       });
       rango = { desde: hace7, hasta: offsetDia(HOY, -1) };
+    } else if (dia === 'ultimos7') {
+      vuelos = vuelos.filter((v) => {
+        const f = fechaOperativa(v);
+        return f >= hace7 && f <= HOY;
+      });
+      rango = { desde: hace7, hasta: HOY };
     } else if (dia === 'incluir_manana') {
       vuelos = vuelos.filter((v) => {
         const f = fechaOperativa(v);
@@ -140,10 +147,10 @@ async function list(req, res, next) {
       // sin filtro
       rango = null;
     } else {
-      // ultimos7 (default): hoy + 7 atras
+      // hoy_ayer (default): ayer + hoy
       vuelos = vuelos.filter((v) => {
         const f = fechaOperativa(v);
-        return f >= hace7 && f <= HOY;
+        return f >= ayer && f <= HOY;
       });
     }
 

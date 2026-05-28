@@ -301,7 +301,7 @@ function ZonaHeader({ zona, sla }) {
     return (
       <div className="flex items-center justify-between gap-2 px-1">
         <span className="text-[9px] uppercase tracking-wider font-bold text-sky-700">
-          Responsabilidad: Courier
+          Responsabilidad: Esser
         </span>
       </div>
     );

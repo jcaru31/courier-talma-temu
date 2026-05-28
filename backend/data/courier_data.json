@@ -59351,6 +59351,2363 @@
           "subeventos": []
         }
       }
+    },
+    {
+      "id": "AWB-COPA-1",
+      "awb": "230-70000013",
+      "vuelo": "CM 0145",
+      "manifiesto": "2026-20300",
+      "aerolinea": "COPA AIRLINES",
+      "origen": "PTY",
+      "destino": "LIM",
+      "eta": "2026-05-08T04:30:00-05:00",
+      "fecha_salida_origen": "2026-05-07T23:10:00-05:00",
+      "matricula": "HP-1854CMP",
+      "fecha": "2026-05-08",
+      "tipo_vuelo": "PAX",
+      "tipo": "COMERCIAL",
+      "consignatario_id": "CLI-SERHAFEN",
+      "agente_carga": "GAMARRA AIR CARGO Y CIA S.A.C.",
+      "warehouse": "30047000700031",
+      "tipo_almacenamiento": "COURIER BAGS",
+      "shipper": "WHALECO INC.",
+      "fecha_emision": "2026-05-05T06:20:00-05:00",
+      "manifiesto_carga": {
+        "numero_manifiesto": "2026-20300",
+        "codigo_transportista": "CM",
+        "capitan": "Ricardo Vargas Saenz",
+        "identidad_capitan": "PAS-440182",
+        "matricula": "HP-1854CMP",
+        "tipo_medio_transporte": "251Y",
+        "puerto_zarpe": "PAPTY",
+        "tipo_lugar_descarga": "88",
+        "lugar_descarga": "3507",
+        "puerto_intermedio": null,
+        "fecha_zarpe": "2026-05-07T23:10:00-05:00",
+        "fecha_zarpe_intermedio": null,
+        "fecha_estimada_llegada": "2026-05-08T04:30:00-05:00",
+        "fecha_numeracion": "2026-05-04T05:30:00-05:00",
+        "fecha_incorporacion_guias": "2026-05-07T11:30:00-05:00"
+      },
+      "volante": "VOL-2026-30017",
+      "handling_pagado": true,
+      "bultos_esperados": 18,
+      "bultos_recibidos": 18,
+      "kgs_esperados": 285.3,
+      "kgs_recibidos": 285.3,
+      "bultos_mal_estado": 0,
+      "bultos_faltantes": 0,
+      "tarja_porcentaje": 100,
+      "status": "EN_PROCESO",
+      "dam": "230-26-S6I-020007-54-617",
+      "canal_dam": {
+        "numero": "2302651080011",
+        "color": "VERDE",
+        "con_levante": true,
+        "agencia_aduana": "BEAGLE AGENCIA DE ADUANA S.A."
+      },
+      "alertas_activas_ids": [],
+      "timeline": {
+        "aerolinea": {
+          "estado": "COMPLETADO",
+          "fecha_inicio": "2026-05-04T05:30:00-05:00",
+          "fecha_fin": "2026-05-07T11:30:00-05:00",
+          "subeventos": [
+            {
+              "nombre": "Numeracion de Manifiesto",
+              "estado": "COMPLETADO",
+              "fecha": "2026-05-04T05:30:00-05:00"
+            },
+            {
+              "nombre": "Incorporacion de guia",
+              "estado": "COMPLETADO",
+              "fecha": "2026-05-07T11:30:00-05:00"
+            }
+          ]
+        },
+        "recepcion": {
+          "estado": "COMPLETADO",
+          "fecha_inicio": "2026-05-08T09:35:00.000Z",
+          "fecha_fin": "2026-05-08T10:00:00.000Z",
+          "subeventos": [
+            {
+              "nombre": "Generacion de turno",
+              "fecha": "2026-05-08T09:35:00.000Z",
+              "estado": "COMPLETADO"
+            },
+            {
+              "nombre": "En dique",
+              "fecha": "2026-05-08T09:45:00.000Z",
+              "estado": "COMPLETADO"
+            },
+            {
+              "nombre": "Inspeccion visual",
+              "fecha": "2026-05-08T10:00:00.000Z",
+              "estado": "COMPLETADO"
+            }
+          ]
+        },
+        "tarja": {
+          "estado": "COMPLETADO",
+          "fecha_inicio": "2026-05-08T10:10:00.000Z",
+          "fecha_fin": "2026-05-08T11:10:00.000Z",
+          "subeventos": [
+            {
+              "nombre": "Inicio tarja",
+              "fecha": "2026-05-08T10:10:00.000Z",
+              "estado": "COMPLETADO"
+            },
+            {
+              "nombre": "Conteo de bultos",
+              "fecha": "2026-05-08T10:45:00.000Z",
+              "estado": "COMPLETADO",
+              "detalle": {
+                "contados": 18,
+                "esperados": 18
+              }
+            },
+            {
+              "nombre": "Diferencias detectadas",
+              "fecha": "2026-05-08T11:10:00.000Z",
+              "estado": "COMPLETADO",
+              "detalle": {
+                "diferencias": 0
+              }
+            }
+          ]
+        },
+        "almacenamiento": {
+          "estado": "COMPLETADO",
+          "fecha_inicio": "2026-05-08T11:15:00.000Z",
+          "fecha_fin": "2026-05-08T12:55:00.000Z",
+          "dias_estadia": 0,
+          "subeventos": [
+            {
+              "nombre": "Estadia de carga",
+              "fecha": "2026-05-08T11:15:00.000Z",
+              "estado": "COMPLETADO"
+            },
+            {
+              "nombre": "Pesado",
+              "fecha": "2026-05-08T12:05:00.000Z",
+              "estado": "COMPLETADO",
+              "detalle": {
+                "kgs": 285.3
+              }
+            },
+            {
+              "nombre": "Asignacion de canal",
+              "fecha": "2026-05-08T12:55:00.000Z",
+              "estado": "COMPLETADO",
+              "detalle": {
+                "canal": "VERDE"
+              }
+            }
+          ]
+        },
+        "aduanas": {
+          "estado": "COMPLETADO",
+          "fecha_inicio": "2026-05-08T13:01:00.000Z",
+          "fecha_fin": "2026-05-08T13:05:00.000Z",
+          "subeventos": [
+            {
+              "nombre": "Transmision de descarga de mercancia",
+              "fecha": "2026-05-08T13:01:00.000Z",
+              "estado": "COMPLETADO"
+            },
+            {
+              "nombre": "Emision de volante",
+              "fecha": "2026-05-08T13:04:00.000Z",
+              "estado": "COMPLETADO"
+            },
+            {
+              "nombre": "Aviso de llegada",
+              "fecha": "2026-05-08T13:05:00.000Z",
+              "estado": "COMPLETADO"
+            }
+          ]
+        },
+        "despacho_eseer": {
+          "estado": "EN_CURSO",
+          "fecha_inicio": "2026-05-08T13:17:00.000Z",
+          "subeventos": [
+            {
+              "nombre": "Facturacion handling",
+              "fecha": "2026-05-08T13:17:00.000Z",
+              "estado": "COMPLETADO"
+            },
+            {
+              "nombre": "Facturacion traslado postal",
+              "fecha": "2026-05-08T13:42:00.000Z",
+              "estado": "COMPLETADO"
+            },
+            {
+              "nombre": "Generacion de turno",
+              "estado": "PENDIENTE"
+            },
+            {
+              "nombre": "Ingreso de transportista",
+              "estado": "PENDIENTE"
+            },
+            {
+              "nombre": "Inicio de estiba",
+              "estado": "PENDIENTE"
+            },
+            {
+              "nombre": "Entrega de carga",
+              "estado": "PENDIENTE"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "AWB-COPA-2",
+      "awb": "230-70000033",
+      "vuelo": "CM 0145",
+      "manifiesto": "2026-20300",
+      "aerolinea": "COPA AIRLINES",
+      "origen": "PTY",
+      "destino": "LIM",
+      "eta": "2026-05-08T04:30:00-05:00",
+      "fecha_salida_origen": "2026-05-07T23:10:00-05:00",
+      "matricula": "HP-1854CMP",
+      "fecha": "2026-05-08",
+      "tipo_vuelo": "PAX",
+      "tipo": "COMERCIAL",
+      "consignatario_id": "CLI-FEDEX",
+      "agente_carga": "SCHARFF LOGISTICA INTEGRADA S.A.",
+      "warehouse": "30047000700063",
+      "tipo_almacenamiento": "COURIER BAGS",
+      "shipper": "TEMU FULFILLMENT CENTER - GUANGZHOU",
+      "fecha_emision": "2026-05-05T06:20:00-05:00",
+      "manifiesto_carga": {
+        "numero_manifiesto": "2026-20300",
+        "codigo_transportista": "CM",
+        "capitan": "Ricardo Vargas Saenz",
+        "identidad_capitan": "PAS-440182",
+        "matricula": "HP-1854CMP",
+        "tipo_medio_transporte": "251Y",
+        "puerto_zarpe": "PAPTY",
+        "tipo_lugar_descarga": "88",
+        "lugar_descarga": "3507",
+        "puerto_intermedio": null,
+        "fecha_zarpe": "2026-05-07T23:10:00-05:00",
+        "fecha_zarpe_intermedio": null,
+        "fecha_estimada_llegada": "2026-05-08T04:30:00-05:00",
+        "fecha_numeracion": "2026-05-04T05:30:00-05:00",
+        "fecha_incorporacion_guias": "2026-05-07T11:30:00-05:00"
+      },
+      "volante": "VOL-2026-30035",
+      "handling_pagado": true,
+      "bultos_esperados": 22,
+      "bultos_recibidos": 22,
+      "kgs_esperados": 320.7,
+      "kgs_recibidos": 320.7,
+      "bultos_mal_estado": 0,
+      "bultos_faltantes": 0,
+      "tarja_porcentaje": 100,
+      "status": "EN_PROCESO",
+      "dam": "230-26-S6I-020015-54-617",
+      "canal_dam": {
+        "numero": "2302651080023",
+        "color": "VERDE",
+        "con_levante": true,
+        "agencia_aduana": "BEAGLE AGENCIA DE ADUANA S.A."
+      },
+      "alertas_activas_ids": [],
+      "timeline": {
+        "aerolinea": {
+          "estado": "COMPLETADO",
+          "fecha_inicio": "2026-05-04T05:30:00-05:00",
+          "fecha_fin": "2026-05-07T11:30:00-05:00",
+          "subeventos": [
+            {
+              "nombre": "Numeracion de Manifiesto",
+              "estado": "COMPLETADO",
+              "fecha": "2026-05-04T05:30:00-05:00"
+            },
+            {
+              "nombre": "Incorporacion de guia",
+              "estado": "COMPLETADO",
+              "fecha": "2026-05-07T11:30:00-05:00"
+            }
+          ]
+        },
+        "recepcion": {
+          "estado": "COMPLETADO",
+          "fecha_inicio": "2026-05-08T09:41:00.000Z",
+          "fecha_fin": "2026-05-08T10:06:00.000Z",
+          "subeventos": [
+            {
+              "nombre": "Generacion de turno",
+              "fecha": "2026-05-08T09:41:00.000Z",
+              "estado": "COMPLETADO"
+            },
+            {
+              "nombre": "En dique",
+              "fecha": "2026-05-08T09:51:00.000Z",
+              "estado": "COMPLETADO"
+            },
+            {
+              "nombre": "Inspeccion visual",
+              "fecha": "2026-05-08T10:06:00.000Z",
+              "estado": "COMPLETADO"
+            }
+          ]
+        },
+        "tarja": {
+          "estado": "COMPLETADO",
+          "fecha_inicio": "2026-05-08T10:16:00.000Z",
+          "fecha_fin": "2026-05-08T11:16:00.000Z",
+          "subeventos": [
+            {
+              "nombre": "Inicio tarja",
+              "fecha": "2026-05-08T10:16:00.000Z",
+              "estado": "COMPLETADO"
+            },
+            {
+              "nombre": "Conteo de bultos",
+              "fecha": "2026-05-08T10:51:00.000Z",
+              "estado": "COMPLETADO",
+              "detalle": {
+                "contados": 22,
+                "esperados": 22
+              }
+            },
+            {
+              "nombre": "Diferencias detectadas",
+              "fecha": "2026-05-08T11:16:00.000Z",
+              "estado": "COMPLETADO",
+              "detalle": {
+                "diferencias": 0
+              }
+            }
+          ]
+        },
+        "almacenamiento": {
+          "estado": "COMPLETADO",
+          "fecha_inicio": "2026-05-08T11:21:00.000Z",
+          "fecha_fin": "2026-05-08T13:01:00.000Z",
+          "dias_estadia": 0,
+          "subeventos": [
+            {
+              "nombre": "Estadia de carga",
+              "fecha": "2026-05-08T11:21:00.000Z",
+              "estado": "COMPLETADO"
+            },
+            {
+              "nombre": "Pesado",
+              "fecha": "2026-05-08T12:11:00.000Z",
+              "estado": "COMPLETADO",
+              "detalle": {
+                "kgs": 320.7
+              }
+            },
+            {
+              "nombre": "Asignacion de canal",
+              "fecha": "2026-05-08T13:01:00.000Z",
+              "estado": "COMPLETADO",
+              "detalle": {
+                "canal": "VERDE"
+              }
+            }
+          ]
+        },
+        "aduanas": {
+          "estado": "COMPLETADO",
+          "fecha_inicio": "2026-05-08T13:07:00.000Z",
+          "fecha_fin": "2026-05-08T13:11:00.000Z",
+          "subeventos": [
+            {
+              "nombre": "Transmision de descarga de mercancia",
+              "fecha": "2026-05-08T13:07:00.000Z",
+              "estado": "COMPLETADO"
+            },
+            {
+              "nombre": "Emision de volante",
+              "fecha": "2026-05-08T13:10:00.000Z",
+              "estado": "COMPLETADO"
+            },
+            {
+              "nombre": "Aviso de llegada",
+              "fecha": "2026-05-08T13:11:00.000Z",
+              "estado": "COMPLETADO"
+            }
+          ]
+        },
+        "despacho_eseer": {
+          "estado": "EN_CURSO",
+          "fecha_inicio": "2026-05-08T13:23:00.000Z",
+          "subeventos": [
+            {
+              "nombre": "Facturacion handling",
+              "fecha": "2026-05-08T13:23:00.000Z",
+              "estado": "COMPLETADO"
+            },
+            {
+              "nombre": "Facturacion traslado postal",
+              "fecha": "2026-05-08T13:48:00.000Z",
+              "estado": "COMPLETADO"
+            },
+            {
+              "nombre": "Generacion de turno",
+              "estado": "PENDIENTE"
+            },
+            {
+              "nombre": "Ingreso de transportista",
+              "estado": "PENDIENTE"
+            },
+            {
+              "nombre": "Inicio de estiba",
+              "estado": "PENDIENTE"
+            },
+            {
+              "nombre": "Entrega de carga",
+              "estado": "PENDIENTE"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "AWB-COPA-3",
+      "awb": "230-70000053",
+      "vuelo": "CM 0145",
+      "manifiesto": "2026-20300",
+      "aerolinea": "COPA AIRLINES",
+      "origen": "PTY",
+      "destino": "LIM",
+      "eta": "2026-05-08T04:30:00-05:00",
+      "fecha_salida_origen": "2026-05-07T23:10:00-05:00",
+      "matricula": "HP-1854CMP",
+      "fecha": "2026-05-08",
+      "tipo_vuelo": "PAX",
+      "tipo": "COMERCIAL",
+      "consignatario_id": "CLI-TEMU",
+      "agente_carga": "TRANSBER S.A.C.",
+      "warehouse": "30047000700095",
+      "tipo_almacenamiento": "COURIER BAGS",
+      "shipper": "PDD EXPORT LOGISTICS CO. LTD",
+      "fecha_emision": "2026-05-05T06:20:00-05:00",
+      "manifiesto_carga": {
+        "numero_manifiesto": "2026-20300",
+        "codigo_transportista": "CM",
+        "capitan": "Ricardo Vargas Saenz",
+        "identidad_capitan": "PAS-440182",
+        "matricula": "HP-1854CMP",
+        "tipo_medio_transporte": "251Y",
+        "puerto_zarpe": "PAPTY",
+        "tipo_lugar_descarga": "88",
+        "lugar_descarga": "3507",
+        "puerto_intermedio": null,
+        "fecha_zarpe": "2026-05-07T23:10:00-05:00",
+        "fecha_zarpe_intermedio": null,
+        "fecha_estimada_llegada": "2026-05-08T04:30:00-05:00",
+        "fecha_numeracion": "2026-05-04T05:30:00-05:00",
+        "fecha_incorporacion_guias": "2026-05-07T11:30:00-05:00"
+      },
+      "volante": "VOL-2026-30053",
+      "handling_pagado": true,
+      "bultos_esperados": 14,
+      "bultos_recibidos": 14,
+      "kgs_esperados": 240.4,
+      "kgs_recibidos": 240.4,
+      "bultos_mal_estado": 0,
+      "bultos_faltantes": 0,
+      "tarja_porcentaje": 100,
+      "status": "EN_PROCESO",
+      "dam": "230-26-S6I-020023-54-617",
+      "canal_dam": {
+        "numero": "2302651080035",
+        "color": "VERDE",
+        "con_levante": true,
+        "agencia_aduana": "BEAGLE AGENCIA DE ADUANA S.A."
+      },
+      "alertas_activas_ids": [],
+      "timeline": {
+        "aerolinea": {
+          "estado": "COMPLETADO",
+          "fecha_inicio": "2026-05-04T05:30:00-05:00",
+          "fecha_fin": "2026-05-07T11:30:00-05:00",
+          "subeventos": [
+            {
+              "nombre": "Numeracion de Manifiesto",
+              "estado": "COMPLETADO",
+              "fecha": "2026-05-04T05:30:00-05:00"
+            },
+            {
+              "nombre": "Incorporacion de guia",
+              "estado": "COMPLETADO",
+              "fecha": "2026-05-07T11:30:00-05:00"
+            }
+          ]
+        },
+        "recepcion": {
+          "estado": "COMPLETADO",
+          "fecha_inicio": "2026-05-08T09:47:00.000Z",
+          "fecha_fin": "2026-05-08T10:12:00.000Z",
+          "subeventos": [
+            {
+              "nombre": "Generacion de turno",
+              "fecha": "2026-05-08T09:47:00.000Z",
+              "estado": "COMPLETADO"
+            },
+            {
+              "nombre": "En dique",
+              "fecha": "2026-05-08T09:57:00.000Z",
+              "estado": "COMPLETADO"
+            },
+            {
+              "nombre": "Inspeccion visual",
+              "fecha": "2026-05-08T10:12:00.000Z",
+              "estado": "COMPLETADO"
+            }
+          ]
+        },
+        "tarja": {
+          "estado": "COMPLETADO",
+          "fecha_inicio": "2026-05-08T10:22:00.000Z",
+          "fecha_fin": "2026-05-08T11:22:00.000Z",
+          "subeventos": [
+            {
+              "nombre": "Inicio tarja",
+              "fecha": "2026-05-08T10:22:00.000Z",
+              "estado": "COMPLETADO"
+            },
+            {
+              "nombre": "Conteo de bultos",
+              "fecha": "2026-05-08T10:57:00.000Z",
+              "estado": "COMPLETADO",
+              "detalle": {
+                "contados": 14,
+                "esperados": 14
+              }
+            },
+            {
+              "nombre": "Diferencias detectadas",
+              "fecha": "2026-05-08T11:22:00.000Z",
+              "estado": "COMPLETADO",
+              "detalle": {
+                "diferencias": 0
+              }
+            }
+          ]
+        },
+        "almacenamiento": {
+          "estado": "COMPLETADO",
+          "fecha_inicio": "2026-05-08T11:27:00.000Z",
+          "fecha_fin": "2026-05-08T13:07:00.000Z",
+          "dias_estadia": 0,
+          "subeventos": [
+            {
+              "nombre": "Estadia de carga",
+              "fecha": "2026-05-08T11:27:00.000Z",
+              "estado": "COMPLETADO"
+            },
+            {
+              "nombre": "Pesado",
+              "fecha": "2026-05-08T12:17:00.000Z",
+              "estado": "COMPLETADO",
+              "detalle": {
+                "kgs": 240.4
+              }
+            },
+            {
+              "nombre": "Asignacion de canal",
+              "fecha": "2026-05-08T13:07:00.000Z",
+              "estado": "COMPLETADO",
+              "detalle": {
+                "canal": "VERDE"
+              }
+            }
+          ]
+        },
+        "aduanas": {
+          "estado": "COMPLETADO",
+          "fecha_inicio": "2026-05-08T13:13:00.000Z",
+          "fecha_fin": "2026-05-08T13:17:00.000Z",
+          "subeventos": [
+            {
+              "nombre": "Transmision de descarga de mercancia",
+              "fecha": "2026-05-08T13:13:00.000Z",
+              "estado": "COMPLETADO"
+            },
+            {
+              "nombre": "Emision de volante",
+              "fecha": "2026-05-08T13:16:00.000Z",
+              "estado": "COMPLETADO"
+            },
+            {
+              "nombre": "Aviso de llegada",
+              "fecha": "2026-05-08T13:17:00.000Z",
+              "estado": "COMPLETADO"
+            }
+          ]
+        },
+        "despacho_eseer": {
+          "estado": "EN_CURSO",
+          "fecha_inicio": "2026-05-08T13:29:00.000Z",
+          "subeventos": [
+            {
+              "nombre": "Facturacion handling",
+              "fecha": "2026-05-08T13:29:00.000Z",
+              "estado": "COMPLETADO"
+            },
+            {
+              "nombre": "Facturacion traslado postal",
+              "fecha": "2026-05-08T13:54:00.000Z",
+              "estado": "COMPLETADO"
+            },
+            {
+              "nombre": "Generacion de turno",
+              "fecha": "2026-05-08T14:34:00.000Z",
+              "estado": "COMPLETADO"
+            },
+            {
+              "nombre": "Ingreso de transportista",
+              "estado": "PENDIENTE"
+            },
+            {
+              "nombre": "Inicio de estiba",
+              "estado": "PENDIENTE"
+            },
+            {
+              "nombre": "Entrega de carga",
+              "estado": "PENDIENTE"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "AWB-COPA-4",
+      "awb": "230-70000073",
+      "vuelo": "CM 0145",
+      "manifiesto": "2026-20300",
+      "aerolinea": "COPA AIRLINES",
+      "origen": "PTY",
+      "destino": "LIM",
+      "eta": "2026-05-08T04:30:00-05:00",
+      "fecha_salida_origen": "2026-05-07T23:10:00-05:00",
+      "matricula": "HP-1854CMP",
+      "fecha": "2026-05-08",
+      "tipo_vuelo": "PAX",
+      "tipo": "COMERCIAL",
+      "consignatario_id": "CLI-SERHAFEN",
+      "agente_carga": "IFB INTERNATIONAL FREIGHT S.A.C.",
+      "warehouse": "30047000700127",
+      "tipo_almacenamiento": "COURIER BAGS",
+      "shipper": "SHENZHEN GLOBAL FORWARDING CO.",
+      "fecha_emision": "2026-05-05T06:20:00-05:00",
+      "manifiesto_carga": {
+        "numero_manifiesto": "2026-20300",
+        "codigo_transportista": "CM",
+        "capitan": "Ricardo Vargas Saenz",
+        "identidad_capitan": "PAS-440182",
+        "matricula": "HP-1854CMP",
+        "tipo_medio_transporte": "251Y",
+        "puerto_zarpe": "PAPTY",
+        "tipo_lugar_descarga": "88",
+        "lugar_descarga": "3507",
+        "puerto_intermedio": null,
+        "fecha_zarpe": "2026-05-07T23:10:00-05:00",
+        "fecha_zarpe_intermedio": null,
+        "fecha_estimada_llegada": "2026-05-08T04:30:00-05:00",
+        "fecha_numeracion": "2026-05-04T05:30:00-05:00",
+        "fecha_incorporacion_guias": "2026-05-07T11:30:00-05:00"
+      },
+      "volante": "VOL-2026-30071",
+      "handling_pagado": true,
+      "bultos_esperados": 12,
+      "bultos_recibidos": 12,
+      "kgs_esperados": 195.2,
+      "kgs_recibidos": 195.2,
+      "bultos_mal_estado": 0,
+      "bultos_faltantes": 0,
+      "tarja_porcentaje": 100,
+      "status": "EN_PROCESO",
+      "dam": "230-26-S6I-020031-54-617",
+      "canal_dam": {
+        "numero": "2302651080047",
+        "color": "VERDE",
+        "con_levante": true,
+        "agencia_aduana": "BEAGLE AGENCIA DE ADUANA S.A."
+      },
+      "alertas_activas_ids": [],
+      "timeline": {
+        "aerolinea": {
+          "estado": "COMPLETADO",
+          "fecha_inicio": "2026-05-04T05:30:00-05:00",
+          "fecha_fin": "2026-05-07T11:30:00-05:00",
+          "subeventos": [
+            {
+              "nombre": "Numeracion de Manifiesto",
+              "estado": "COMPLETADO",
+              "fecha": "2026-05-04T05:30:00-05:00"
+            },
+            {
+              "nombre": "Incorporacion de guia",
+              "estado": "COMPLETADO",
+              "fecha": "2026-05-07T11:30:00-05:00"
+            }
+          ]
+        },
+        "recepcion": {
+          "estado": "COMPLETADO",
+          "fecha_inicio": "2026-05-08T09:53:00.000Z",
+          "fecha_fin": "2026-05-08T10:18:00.000Z",
+          "subeventos": [
+            {
+              "nombre": "Generacion de turno",
+              "fecha": "2026-05-08T09:53:00.000Z",
+              "estado": "COMPLETADO"
+            },
+            {
+              "nombre": "En dique",
+              "fecha": "2026-05-08T10:03:00.000Z",
+              "estado": "COMPLETADO"
+            },
+            {
+              "nombre": "Inspeccion visual",
+              "fecha": "2026-05-08T10:18:00.000Z",
+              "estado": "COMPLETADO"
+            }
+          ]
+        },
+        "tarja": {
+          "estado": "COMPLETADO",
+          "fecha_inicio": "2026-05-08T10:28:00.000Z",
+          "fecha_fin": "2026-05-08T11:28:00.000Z",
+          "subeventos": [
+            {
+              "nombre": "Inicio tarja",
+              "fecha": "2026-05-08T10:28:00.000Z",
+              "estado": "COMPLETADO"
+            },
+            {
+              "nombre": "Conteo de bultos",
+              "fecha": "2026-05-08T11:03:00.000Z",
+              "estado": "COMPLETADO",
+              "detalle": {
+                "contados": 12,
+                "esperados": 12
+              }
+            },
+            {
+              "nombre": "Diferencias detectadas",
+              "fecha": "2026-05-08T11:28:00.000Z",
+              "estado": "COMPLETADO",
+              "detalle": {
+                "diferencias": 0
+              }
+            }
+          ]
+        },
+        "almacenamiento": {
+          "estado": "COMPLETADO",
+          "fecha_inicio": "2026-05-08T11:33:00.000Z",
+          "fecha_fin": "2026-05-08T13:13:00.000Z",
+          "dias_estadia": 0,
+          "subeventos": [
+            {
+              "nombre": "Estadia de carga",
+              "fecha": "2026-05-08T11:33:00.000Z",
+              "estado": "COMPLETADO"
+            },
+            {
+              "nombre": "Pesado",
+              "fecha": "2026-05-08T12:23:00.000Z",
+              "estado": "COMPLETADO",
+              "detalle": {
+                "kgs": 195.2
+              }
+            },
+            {
+              "nombre": "Asignacion de canal",
+              "fecha": "2026-05-08T13:13:00.000Z",
+              "estado": "COMPLETADO",
+              "detalle": {
+                "canal": "VERDE"
+              }
+            }
+          ]
+        },
+        "aduanas": {
+          "estado": "COMPLETADO",
+          "fecha_inicio": "2026-05-08T13:19:00.000Z",
+          "fecha_fin": "2026-05-08T13:23:00.000Z",
+          "subeventos": [
+            {
+              "nombre": "Transmision de descarga de mercancia",
+              "fecha": "2026-05-08T13:19:00.000Z",
+              "estado": "COMPLETADO"
+            },
+            {
+              "nombre": "Emision de volante",
+              "fecha": "2026-05-08T13:22:00.000Z",
+              "estado": "COMPLETADO"
+            },
+            {
+              "nombre": "Aviso de llegada",
+              "fecha": "2026-05-08T13:23:00.000Z",
+              "estado": "COMPLETADO"
+            }
+          ]
+        },
+        "despacho_eseer": {
+          "estado": "EN_CURSO",
+          "fecha_inicio": "2026-05-08T13:35:00.000Z",
+          "subeventos": [
+            {
+              "nombre": "Facturacion handling",
+              "fecha": "2026-05-08T13:35:00.000Z",
+              "estado": "COMPLETADO"
+            },
+            {
+              "nombre": "Facturacion traslado postal",
+              "fecha": "2026-05-08T14:00:00.000Z",
+              "estado": "COMPLETADO"
+            },
+            {
+              "nombre": "Generacion de turno",
+              "fecha": "2026-05-08T14:40:00.000Z",
+              "estado": "COMPLETADO"
+            },
+            {
+              "nombre": "Ingreso de transportista",
+              "estado": "PENDIENTE"
+            },
+            {
+              "nombre": "Inicio de estiba",
+              "estado": "PENDIENTE"
+            },
+            {
+              "nombre": "Entrega de carga",
+              "estado": "PENDIENTE"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "AWB-COPA-5",
+      "awb": "230-70000093",
+      "vuelo": "CM 0145",
+      "manifiesto": "2026-20300",
+      "aerolinea": "COPA AIRLINES",
+      "origen": "PTY",
+      "destino": "LIM",
+      "eta": "2026-05-08T04:30:00-05:00",
+      "fecha_salida_origen": "2026-05-07T23:10:00-05:00",
+      "matricula": "HP-1854CMP",
+      "fecha": "2026-05-08",
+      "tipo_vuelo": "PAX",
+      "tipo": "COMERCIAL",
+      "consignatario_id": "CLI-FEDEX",
+      "agente_carga": "GAMARRA AIR CARGO Y CIA S.A.C.",
+      "warehouse": "30047000700159",
+      "tipo_almacenamiento": "COURIER BAGS",
+      "shipper": "WHALECO INC.",
+      "fecha_emision": "2026-05-05T06:20:00-05:00",
+      "manifiesto_carga": {
+        "numero_manifiesto": "2026-20300",
+        "codigo_transportista": "CM",
+        "capitan": "Ricardo Vargas Saenz",
+        "identidad_capitan": "PAS-440182",
+        "matricula": "HP-1854CMP",
+        "tipo_medio_transporte": "251Y",
+        "puerto_zarpe": "PAPTY",
+        "tipo_lugar_descarga": "88",
+        "lugar_descarga": "3507",
+        "puerto_intermedio": null,
+        "fecha_zarpe": "2026-05-07T23:10:00-05:00",
+        "fecha_zarpe_intermedio": null,
+        "fecha_estimada_llegada": "2026-05-08T04:30:00-05:00",
+        "fecha_numeracion": "2026-05-04T05:30:00-05:00",
+        "fecha_incorporacion_guias": "2026-05-07T11:30:00-05:00"
+      },
+      "volante": "VOL-2026-30089",
+      "handling_pagado": true,
+      "bultos_esperados": 19,
+      "bultos_recibidos": 19,
+      "kgs_esperados": 310.1,
+      "kgs_recibidos": 310.1,
+      "bultos_mal_estado": 0,
+      "bultos_faltantes": 0,
+      "tarja_porcentaje": 100,
+      "status": "DESPACHADO_A_ESEER",
+      "dam": "230-26-S6I-020039-54-617",
+      "canal_dam": {
+        "numero": "2302651080059",
+        "color": "VERDE",
+        "con_levante": true,
+        "agencia_aduana": "BEAGLE AGENCIA DE ADUANA S.A."
+      },
+      "alertas_activas_ids": [],
+      "timeline": {
+        "aerolinea": {
+          "estado": "COMPLETADO",
+          "fecha_inicio": "2026-05-04T05:30:00-05:00",
+          "fecha_fin": "2026-05-07T11:30:00-05:00",
+          "subeventos": [
+            {
+              "nombre": "Numeracion de Manifiesto",
+              "estado": "COMPLETADO",
+              "fecha": "2026-05-04T05:30:00-05:00"
+            },
+            {
+              "nombre": "Incorporacion de guia",
+              "estado": "COMPLETADO",
+              "fecha": "2026-05-07T11:30:00-05:00"
+            }
+          ]
+        },
+        "recepcion": {
+          "estado": "COMPLETADO",
+          "fecha_inicio": "2026-05-08T09:59:00.000Z",
+          "fecha_fin": "2026-05-08T10:24:00.000Z",
+          "subeventos": [
+            {
+              "nombre": "Generacion de turno",
+              "fecha": "2026-05-08T09:59:00.000Z",
+              "estado": "COMPLETADO"
+            },
+            {
+              "nombre": "En dique",
+              "fecha": "2026-05-08T10:09:00.000Z",
+              "estado": "COMPLETADO"
+            },
+            {
+              "nombre": "Inspeccion visual",
+              "fecha": "2026-05-08T10:24:00.000Z",
+              "estado": "COMPLETADO"
+            }
+          ]
+        },
+        "tarja": {
+          "estado": "COMPLETADO",
+          "fecha_inicio": "2026-05-08T10:34:00.000Z",
+          "fecha_fin": "2026-05-08T11:34:00.000Z",
+          "subeventos": [
+            {
+              "nombre": "Inicio tarja",
+              "fecha": "2026-05-08T10:34:00.000Z",
+              "estado": "COMPLETADO"
+            },
+            {
+              "nombre": "Conteo de bultos",
+              "fecha": "2026-05-08T11:09:00.000Z",
+              "estado": "COMPLETADO",
+              "detalle": {
+                "contados": 19,
+                "esperados": 19
+              }
+            },
+            {
+              "nombre": "Diferencias detectadas",
+              "fecha": "2026-05-08T11:34:00.000Z",
+              "estado": "COMPLETADO",
+              "detalle": {
+                "diferencias": 0
+              }
+            }
+          ]
+        },
+        "almacenamiento": {
+          "estado": "COMPLETADO",
+          "fecha_inicio": "2026-05-08T11:39:00.000Z",
+          "fecha_fin": "2026-05-08T13:19:00.000Z",
+          "dias_estadia": 0,
+          "subeventos": [
+            {
+              "nombre": "Estadia de carga",
+              "fecha": "2026-05-08T11:39:00.000Z",
+              "estado": "COMPLETADO"
+            },
+            {
+              "nombre": "Pesado",
+              "fecha": "2026-05-08T12:29:00.000Z",
+              "estado": "COMPLETADO",
+              "detalle": {
+                "kgs": 310.1
+              }
+            },
+            {
+              "nombre": "Asignacion de canal",
+              "fecha": "2026-05-08T13:19:00.000Z",
+              "estado": "COMPLETADO",
+              "detalle": {
+                "canal": "VERDE"
+              }
+            }
+          ]
+        },
+        "aduanas": {
+          "estado": "COMPLETADO",
+          "fecha_inicio": "2026-05-08T13:25:00.000Z",
+          "fecha_fin": "2026-05-08T13:29:00.000Z",
+          "subeventos": [
+            {
+              "nombre": "Transmision de descarga de mercancia",
+              "fecha": "2026-05-08T13:25:00.000Z",
+              "estado": "COMPLETADO"
+            },
+            {
+              "nombre": "Emision de volante",
+              "fecha": "2026-05-08T13:28:00.000Z",
+              "estado": "COMPLETADO"
+            },
+            {
+              "nombre": "Aviso de llegada",
+              "fecha": "2026-05-08T13:29:00.000Z",
+              "estado": "COMPLETADO"
+            }
+          ]
+        },
+        "despacho_eseer": {
+          "estado": "COMPLETADO",
+          "fecha_inicio": "2026-05-08T13:41:00.000Z",
+          "subeventos": [
+            {
+              "nombre": "Facturacion handling",
+              "fecha": "2026-05-08T13:41:00.000Z",
+              "estado": "COMPLETADO"
+            },
+            {
+              "nombre": "Facturacion traslado postal",
+              "fecha": "2026-05-08T14:06:00.000Z",
+              "estado": "COMPLETADO"
+            },
+            {
+              "nombre": "Generacion de turno",
+              "fecha": "2026-05-08T14:46:00.000Z",
+              "estado": "COMPLETADO"
+            },
+            {
+              "nombre": "Ingreso de transportista",
+              "fecha": "2026-05-08T16:16:00.000Z",
+              "estado": "COMPLETADO",
+              "detalle": {
+                "placa": "B7K-921"
+              }
+            },
+            {
+              "nombre": "Inicio de estiba",
+              "fecha": "2026-05-08T16:46:00.000Z",
+              "estado": "COMPLETADO"
+            },
+            {
+              "nombre": "Entrega de carga",
+              "fecha": "2026-05-08T17:56:00.000Z",
+              "estado": "COMPLETADO"
+            }
+          ],
+          "fecha_fin": "2026-05-08T17:56:00.000Z"
+        }
+      }
+    },
+    {
+      "id": "AWB-COPA-6",
+      "awb": "230-70000113",
+      "vuelo": "CM 0145",
+      "manifiesto": "2026-20300",
+      "aerolinea": "COPA AIRLINES",
+      "origen": "PTY",
+      "destino": "LIM",
+      "eta": "2026-05-08T04:30:00-05:00",
+      "fecha_salida_origen": "2026-05-07T23:10:00-05:00",
+      "matricula": "HP-1854CMP",
+      "fecha": "2026-05-08",
+      "tipo_vuelo": "PAX",
+      "tipo": "COMERCIAL",
+      "consignatario_id": "CLI-TEMU",
+      "agente_carga": "SCHARFF LOGISTICA INTEGRADA S.A.",
+      "warehouse": "30047000700191",
+      "tipo_almacenamiento": "COURIER BAGS",
+      "shipper": "TEMU FULFILLMENT CENTER - GUANGZHOU",
+      "fecha_emision": "2026-05-05T06:20:00-05:00",
+      "manifiesto_carga": {
+        "numero_manifiesto": "2026-20300",
+        "codigo_transportista": "CM",
+        "capitan": "Ricardo Vargas Saenz",
+        "identidad_capitan": "PAS-440182",
+        "matricula": "HP-1854CMP",
+        "tipo_medio_transporte": "251Y",
+        "puerto_zarpe": "PAPTY",
+        "tipo_lugar_descarga": "88",
+        "lugar_descarga": "3507",
+        "puerto_intermedio": null,
+        "fecha_zarpe": "2026-05-07T23:10:00-05:00",
+        "fecha_zarpe_intermedio": null,
+        "fecha_estimada_llegada": "2026-05-08T04:30:00-05:00",
+        "fecha_numeracion": "2026-05-04T05:30:00-05:00",
+        "fecha_incorporacion_guias": "2026-05-07T11:30:00-05:00"
+      },
+      "volante": "VOL-2026-30107",
+      "handling_pagado": true,
+      "bultos_esperados": 16,
+      "bultos_recibidos": 16,
+      "kgs_esperados": 270.8,
+      "kgs_recibidos": 270.8,
+      "bultos_mal_estado": 0,
+      "bultos_faltantes": 0,
+      "tarja_porcentaje": 100,
+      "status": "DESPACHADO_A_ESEER",
+      "dam": "230-26-S6I-020047-54-617",
+      "canal_dam": {
+        "numero": "2302651080071",
+        "color": "VERDE",
+        "con_levante": true,
+        "agencia_aduana": "BEAGLE AGENCIA DE ADUANA S.A."
+      },
+      "alertas_activas_ids": [],
+      "timeline": {
+        "aerolinea": {
+          "estado": "COMPLETADO",
+          "fecha_inicio": "2026-05-04T05:30:00-05:00",
+          "fecha_fin": "2026-05-07T11:30:00-05:00",
+          "subeventos": [
+            {
+              "nombre": "Numeracion de Manifiesto",
+              "estado": "COMPLETADO",
+              "fecha": "2026-05-04T05:30:00-05:00"
+            },
+            {
+              "nombre": "Incorporacion de guia",
+              "estado": "COMPLETADO",
+              "fecha": "2026-05-07T11:30:00-05:00"
+            }
+          ]
+        },
+        "recepcion": {
+          "estado": "COMPLETADO",
+          "fecha_inicio": "2026-05-08T10:05:00.000Z",
+          "fecha_fin": "2026-05-08T10:30:00.000Z",
+          "subeventos": [
+            {
+              "nombre": "Generacion de turno",
+              "fecha": "2026-05-08T10:05:00.000Z",
+              "estado": "COMPLETADO"
+            },
+            {
+              "nombre": "En dique",
+              "fecha": "2026-05-08T10:15:00.000Z",
+              "estado": "COMPLETADO"
+            },
+            {
+              "nombre": "Inspeccion visual",
+              "fecha": "2026-05-08T10:30:00.000Z",
+              "estado": "COMPLETADO"
+            }
+          ]
+        },
+        "tarja": {
+          "estado": "COMPLETADO",
+          "fecha_inicio": "2026-05-08T10:40:00.000Z",
+          "fecha_fin": "2026-05-08T11:40:00.000Z",
+          "subeventos": [
+            {
+              "nombre": "Inicio tarja",
+              "fecha": "2026-05-08T10:40:00.000Z",
+              "estado": "COMPLETADO"
+            },
+            {
+              "nombre": "Conteo de bultos",
+              "fecha": "2026-05-08T11:15:00.000Z",
+              "estado": "COMPLETADO",
+              "detalle": {
+                "contados": 16,
+                "esperados": 16
+              }
+            },
+            {
+              "nombre": "Diferencias detectadas",
+              "fecha": "2026-05-08T11:40:00.000Z",
+              "estado": "COMPLETADO",
+              "detalle": {
+                "diferencias": 0
+              }
+            }
+          ]
+        },
+        "almacenamiento": {
+          "estado": "COMPLETADO",
+          "fecha_inicio": "2026-05-08T11:45:00.000Z",
+          "fecha_fin": "2026-05-08T13:25:00.000Z",
+          "dias_estadia": 0,
+          "subeventos": [
+            {
+              "nombre": "Estadia de carga",
+              "fecha": "2026-05-08T11:45:00.000Z",
+              "estado": "COMPLETADO"
+            },
+            {
+              "nombre": "Pesado",
+              "fecha": "2026-05-08T12:35:00.000Z",
+              "estado": "COMPLETADO",
+              "detalle": {
+                "kgs": 270.8
+              }
+            },
+            {
+              "nombre": "Asignacion de canal",
+              "fecha": "2026-05-08T13:25:00.000Z",
+              "estado": "COMPLETADO",
+              "detalle": {
+                "canal": "VERDE"
+              }
+            }
+          ]
+        },
+        "aduanas": {
+          "estado": "COMPLETADO",
+          "fecha_inicio": "2026-05-08T13:31:00.000Z",
+          "fecha_fin": "2026-05-08T13:35:00.000Z",
+          "subeventos": [
+            {
+              "nombre": "Transmision de descarga de mercancia",
+              "fecha": "2026-05-08T13:31:00.000Z",
+              "estado": "COMPLETADO"
+            },
+            {
+              "nombre": "Emision de volante",
+              "fecha": "2026-05-08T13:34:00.000Z",
+              "estado": "COMPLETADO"
+            },
+            {
+              "nombre": "Aviso de llegada",
+              "fecha": "2026-05-08T13:35:00.000Z",
+              "estado": "COMPLETADO"
+            }
+          ]
+        },
+        "despacho_eseer": {
+          "estado": "COMPLETADO",
+          "fecha_inicio": "2026-05-08T13:47:00.000Z",
+          "subeventos": [
+            {
+              "nombre": "Facturacion handling",
+              "fecha": "2026-05-08T13:47:00.000Z",
+              "estado": "COMPLETADO"
+            },
+            {
+              "nombre": "Facturacion traslado postal",
+              "fecha": "2026-05-08T14:12:00.000Z",
+              "estado": "COMPLETADO"
+            },
+            {
+              "nombre": "Generacion de turno",
+              "fecha": "2026-05-08T14:52:00.000Z",
+              "estado": "COMPLETADO"
+            },
+            {
+              "nombre": "Ingreso de transportista",
+              "fecha": "2026-05-08T16:22:00.000Z",
+              "estado": "COMPLETADO",
+              "detalle": {
+                "placa": "B7K-921"
+              }
+            },
+            {
+              "nombre": "Inicio de estiba",
+              "fecha": "2026-05-08T16:52:00.000Z",
+              "estado": "COMPLETADO"
+            },
+            {
+              "nombre": "Entrega de carga",
+              "fecha": "2026-05-08T18:02:00.000Z",
+              "estado": "COMPLETADO"
+            }
+          ],
+          "fecha_fin": "2026-05-08T18:02:00.000Z"
+        }
+      }
+    },
+    {
+      "id": "AWB-COPA-7",
+      "awb": "230-70000091",
+      "vuelo": "CM 0125",
+      "manifiesto": "2026-20301",
+      "aerolinea": "COPA AIRLINES",
+      "origen": "PTY",
+      "destino": "LIM",
+      "eta": "2026-05-07T03:15:00-05:00",
+      "fecha_salida_origen": "2026-05-06T21:50:00-05:00",
+      "matricula": "HP-1729CMP",
+      "fecha": "2026-05-07",
+      "tipo_vuelo": "PAX",
+      "tipo": "COMERCIAL",
+      "consignatario_id": "CLI-SERHAFEN",
+      "agente_carga": "GAMARRA AIR CARGO Y CIA S.A.C.",
+      "warehouse": "30047000700217",
+      "tipo_almacenamiento": "COURIER BAGS",
+      "shipper": "WHALECO INC.",
+      "fecha_emision": "2026-05-04T05:40:00-05:00",
+      "manifiesto_carga": {
+        "numero_manifiesto": "2026-20301",
+        "codigo_transportista": "CM",
+        "capitan": "Fernando Quispe Tito",
+        "identidad_capitan": "PAS-380721",
+        "matricula": "HP-1729CMP",
+        "tipo_medio_transporte": "251Y",
+        "puerto_zarpe": "PAPTY",
+        "tipo_lugar_descarga": "88",
+        "lugar_descarga": "3507",
+        "puerto_intermedio": null,
+        "fecha_zarpe": "2026-05-06T21:50:00-05:00",
+        "fecha_zarpe_intermedio": null,
+        "fecha_estimada_llegada": "2026-05-07T03:15:00-05:00",
+        "fecha_numeracion": "2026-05-03T04:10:00-05:00",
+        "fecha_incorporacion_guias": "2026-05-06T09:45:00-05:00"
+      },
+      "volante": "VOL-2026-30119",
+      "handling_pagado": true,
+      "bultos_esperados": 14,
+      "bultos_recibidos": 14,
+      "kgs_esperados": 220.5,
+      "kgs_recibidos": 220.5,
+      "bultos_mal_estado": 0,
+      "bultos_faltantes": 0,
+      "tarja_porcentaje": 100,
+      "status": "DESPACHADO_A_ESEER",
+      "dam": "230-26-S6I-020049-54-617",
+      "canal_dam": {
+        "numero": "2302651080077",
+        "color": "VERDE",
+        "con_levante": true,
+        "agencia_aduana": "BEAGLE AGENCIA DE ADUANA S.A."
+      },
+      "alertas_activas_ids": [],
+      "timeline": {
+        "aerolinea": {
+          "estado": "COMPLETADO",
+          "fecha_inicio": "2026-05-03T04:10:00-05:00",
+          "fecha_fin": "2026-05-06T09:45:00-05:00",
+          "subeventos": [
+            {
+              "nombre": "Numeracion de Manifiesto",
+              "estado": "COMPLETADO",
+              "fecha": "2026-05-03T04:10:00-05:00"
+            },
+            {
+              "nombre": "Incorporacion de guia",
+              "estado": "COMPLETADO",
+              "fecha": "2026-05-06T09:45:00-05:00"
+            }
+          ]
+        },
+        "recepcion": {
+          "estado": "COMPLETADO",
+          "fecha_inicio": "2026-05-07T08:30:00.000Z",
+          "fecha_fin": "2026-05-07T08:55:00.000Z",
+          "subeventos": [
+            {
+              "nombre": "Generacion de turno",
+              "fecha": "2026-05-07T08:30:00.000Z",
+              "estado": "COMPLETADO"
+            },
+            {
+              "nombre": "En dique",
+              "fecha": "2026-05-07T08:40:00.000Z",
+              "estado": "COMPLETADO"
+            },
+            {
+              "nombre": "Inspeccion visual",
+              "fecha": "2026-05-07T08:55:00.000Z",
+              "estado": "COMPLETADO"
+            }
+          ]
+        },
+        "tarja": {
+          "estado": "COMPLETADO",
+          "fecha_inicio": "2026-05-07T09:05:00.000Z",
+          "fecha_fin": "2026-05-07T10:05:00.000Z",
+          "subeventos": [
+            {
+              "nombre": "Inicio tarja",
+              "fecha": "2026-05-07T09:05:00.000Z",
+              "estado": "COMPLETADO"
+            },
+            {
+              "nombre": "Conteo de bultos",
+              "fecha": "2026-05-07T09:40:00.000Z",
+              "estado": "COMPLETADO",
+              "detalle": {
+                "contados": 14,
+                "esperados": 14
+              }
+            },
+            {
+              "nombre": "Diferencias detectadas",
+              "fecha": "2026-05-07T10:05:00.000Z",
+              "estado": "COMPLETADO",
+              "detalle": {
+                "diferencias": 0
+              }
+            }
+          ]
+        },
+        "almacenamiento": {
+          "estado": "COMPLETADO",
+          "fecha_inicio": "2026-05-07T10:10:00.000Z",
+          "fecha_fin": "2026-05-07T11:50:00.000Z",
+          "dias_estadia": 0,
+          "subeventos": [
+            {
+              "nombre": "Estadia de carga",
+              "fecha": "2026-05-07T10:10:00.000Z",
+              "estado": "COMPLETADO"
+            },
+            {
+              "nombre": "Pesado",
+              "fecha": "2026-05-07T11:00:00.000Z",
+              "estado": "COMPLETADO",
+              "detalle": {
+                "kgs": 220.5
+              }
+            },
+            {
+              "nombre": "Asignacion de canal",
+              "fecha": "2026-05-07T11:50:00.000Z",
+              "estado": "COMPLETADO",
+              "detalle": {
+                "canal": "VERDE"
+              }
+            }
+          ]
+        },
+        "aduanas": {
+          "estado": "COMPLETADO",
+          "fecha_inicio": "2026-05-07T11:56:00.000Z",
+          "fecha_fin": "2026-05-07T12:00:00.000Z",
+          "subeventos": [
+            {
+              "nombre": "Transmision de descarga de mercancia",
+              "fecha": "2026-05-07T11:56:00.000Z",
+              "estado": "COMPLETADO"
+            },
+            {
+              "nombre": "Emision de volante",
+              "fecha": "2026-05-07T11:59:00.000Z",
+              "estado": "COMPLETADO"
+            },
+            {
+              "nombre": "Aviso de llegada",
+              "fecha": "2026-05-07T12:00:00.000Z",
+              "estado": "COMPLETADO"
+            }
+          ]
+        },
+        "despacho_eseer": {
+          "estado": "COMPLETADO",
+          "fecha_inicio": "2026-05-07T12:12:00.000Z",
+          "subeventos": [
+            {
+              "nombre": "Facturacion handling",
+              "fecha": "2026-05-07T12:12:00.000Z",
+              "estado": "COMPLETADO"
+            },
+            {
+              "nombre": "Facturacion traslado postal",
+              "fecha": "2026-05-07T12:37:00.000Z",
+              "estado": "COMPLETADO"
+            },
+            {
+              "nombre": "Generacion de turno",
+              "fecha": "2026-05-07T13:17:00.000Z",
+              "estado": "COMPLETADO"
+            },
+            {
+              "nombre": "Ingreso de transportista",
+              "fecha": "2026-05-07T14:47:00.000Z",
+              "estado": "COMPLETADO",
+              "detalle": {
+                "placa": "B7K-921"
+              }
+            },
+            {
+              "nombre": "Inicio de estiba",
+              "fecha": "2026-05-07T15:17:00.000Z",
+              "estado": "COMPLETADO"
+            },
+            {
+              "nombre": "Entrega de carga",
+              "fecha": "2026-05-07T16:27:00.000Z",
+              "estado": "COMPLETADO"
+            }
+          ],
+          "fecha_fin": "2026-05-07T16:27:00.000Z"
+        }
+      }
+    },
+    {
+      "id": "AWB-COPA-8",
+      "awb": "230-70000111",
+      "vuelo": "CM 0125",
+      "manifiesto": "2026-20301",
+      "aerolinea": "COPA AIRLINES",
+      "origen": "PTY",
+      "destino": "LIM",
+      "eta": "2026-05-07T03:15:00-05:00",
+      "fecha_salida_origen": "2026-05-06T21:50:00-05:00",
+      "matricula": "HP-1729CMP",
+      "fecha": "2026-05-07",
+      "tipo_vuelo": "PAX",
+      "tipo": "COMERCIAL",
+      "consignatario_id": "CLI-FEDEX",
+      "agente_carga": "SCHARFF LOGISTICA INTEGRADA S.A.",
+      "warehouse": "30047000700249",
+      "tipo_almacenamiento": "COURIER BAGS",
+      "shipper": "TEMU FULFILLMENT CENTER - GUANGZHOU",
+      "fecha_emision": "2026-05-04T05:40:00-05:00",
+      "manifiesto_carga": {
+        "numero_manifiesto": "2026-20301",
+        "codigo_transportista": "CM",
+        "capitan": "Fernando Quispe Tito",
+        "identidad_capitan": "PAS-380721",
+        "matricula": "HP-1729CMP",
+        "tipo_medio_transporte": "251Y",
+        "puerto_zarpe": "PAPTY",
+        "tipo_lugar_descarga": "88",
+        "lugar_descarga": "3507",
+        "puerto_intermedio": null,
+        "fecha_zarpe": "2026-05-06T21:50:00-05:00",
+        "fecha_zarpe_intermedio": null,
+        "fecha_estimada_llegada": "2026-05-07T03:15:00-05:00",
+        "fecha_numeracion": "2026-05-03T04:10:00-05:00",
+        "fecha_incorporacion_guias": "2026-05-06T09:45:00-05:00"
+      },
+      "volante": "VOL-2026-30137",
+      "handling_pagado": true,
+      "bultos_esperados": 25,
+      "bultos_recibidos": 25,
+      "kgs_esperados": 380.2,
+      "kgs_recibidos": 380.2,
+      "bultos_mal_estado": 0,
+      "bultos_faltantes": 0,
+      "tarja_porcentaje": 100,
+      "status": "DESPACHADO_A_ESEER",
+      "dam": "230-26-S6I-020057-54-617",
+      "canal_dam": {
+        "numero": "2302651080089",
+        "color": "VERDE",
+        "con_levante": true,
+        "agencia_aduana": "BEAGLE AGENCIA DE ADUANA S.A."
+      },
+      "alertas_activas_ids": [],
+      "timeline": {
+        "aerolinea": {
+          "estado": "COMPLETADO",
+          "fecha_inicio": "2026-05-03T04:10:00-05:00",
+          "fecha_fin": "2026-05-06T09:45:00-05:00",
+          "subeventos": [
+            {
+              "nombre": "Numeracion de Manifiesto",
+              "estado": "COMPLETADO",
+              "fecha": "2026-05-03T04:10:00-05:00"
+            },
+            {
+              "nombre": "Incorporacion de guia",
+              "estado": "COMPLETADO",
+              "fecha": "2026-05-06T09:45:00-05:00"
+            }
+          ]
+        },
+        "recepcion": {
+          "estado": "COMPLETADO",
+          "fecha_inicio": "2026-05-07T08:36:00.000Z",
+          "fecha_fin": "2026-05-07T09:01:00.000Z",
+          "subeventos": [
+            {
+              "nombre": "Generacion de turno",
+              "fecha": "2026-05-07T08:36:00.000Z",
+              "estado": "COMPLETADO"
+            },
+            {
+              "nombre": "En dique",
+              "fecha": "2026-05-07T08:46:00.000Z",
+              "estado": "COMPLETADO"
+            },
+            {
+              "nombre": "Inspeccion visual",
+              "fecha": "2026-05-07T09:01:00.000Z",
+              "estado": "COMPLETADO"
+            }
+          ]
+        },
+        "tarja": {
+          "estado": "COMPLETADO",
+          "fecha_inicio": "2026-05-07T09:11:00.000Z",
+          "fecha_fin": "2026-05-07T10:11:00.000Z",
+          "subeventos": [
+            {
+              "nombre": "Inicio tarja",
+              "fecha": "2026-05-07T09:11:00.000Z",
+              "estado": "COMPLETADO"
+            },
+            {
+              "nombre": "Conteo de bultos",
+              "fecha": "2026-05-07T09:46:00.000Z",
+              "estado": "COMPLETADO",
+              "detalle": {
+                "contados": 25,
+                "esperados": 25
+              }
+            },
+            {
+              "nombre": "Diferencias detectadas",
+              "fecha": "2026-05-07T10:11:00.000Z",
+              "estado": "COMPLETADO",
+              "detalle": {
+                "diferencias": 0
+              }
+            }
+          ]
+        },
+        "almacenamiento": {
+          "estado": "COMPLETADO",
+          "fecha_inicio": "2026-05-07T10:16:00.000Z",
+          "fecha_fin": "2026-05-07T11:56:00.000Z",
+          "dias_estadia": 0,
+          "subeventos": [
+            {
+              "nombre": "Estadia de carga",
+              "fecha": "2026-05-07T10:16:00.000Z",
+              "estado": "COMPLETADO"
+            },
+            {
+              "nombre": "Pesado",
+              "fecha": "2026-05-07T11:06:00.000Z",
+              "estado": "COMPLETADO",
+              "detalle": {
+                "kgs": 380.2
+              }
+            },
+            {
+              "nombre": "Asignacion de canal",
+              "fecha": "2026-05-07T11:56:00.000Z",
+              "estado": "COMPLETADO",
+              "detalle": {
+                "canal": "VERDE"
+              }
+            }
+          ]
+        },
+        "aduanas": {
+          "estado": "COMPLETADO",
+          "fecha_inicio": "2026-05-07T12:02:00.000Z",
+          "fecha_fin": "2026-05-07T12:06:00.000Z",
+          "subeventos": [
+            {
+              "nombre": "Transmision de descarga de mercancia",
+              "fecha": "2026-05-07T12:02:00.000Z",
+              "estado": "COMPLETADO"
+            },
+            {
+              "nombre": "Emision de volante",
+              "fecha": "2026-05-07T12:05:00.000Z",
+              "estado": "COMPLETADO"
+            },
+            {
+              "nombre": "Aviso de llegada",
+              "fecha": "2026-05-07T12:06:00.000Z",
+              "estado": "COMPLETADO"
+            }
+          ]
+        },
+        "despacho_eseer": {
+          "estado": "COMPLETADO",
+          "fecha_inicio": "2026-05-07T12:18:00.000Z",
+          "subeventos": [
+            {
+              "nombre": "Facturacion handling",
+              "fecha": "2026-05-07T12:18:00.000Z",
+              "estado": "COMPLETADO"
+            },
+            {
+              "nombre": "Facturacion traslado postal",
+              "fecha": "2026-05-07T12:43:00.000Z",
+              "estado": "COMPLETADO"
+            },
+            {
+              "nombre": "Generacion de turno",
+              "fecha": "2026-05-07T13:23:00.000Z",
+              "estado": "COMPLETADO"
+            },
+            {
+              "nombre": "Ingreso de transportista",
+              "fecha": "2026-05-07T14:53:00.000Z",
+              "estado": "COMPLETADO",
+              "detalle": {
+                "placa": "B7K-921"
+              }
+            },
+            {
+              "nombre": "Inicio de estiba",
+              "fecha": "2026-05-07T15:23:00.000Z",
+              "estado": "COMPLETADO"
+            },
+            {
+              "nombre": "Entrega de carga",
+              "fecha": "2026-05-07T16:33:00.000Z",
+              "estado": "COMPLETADO"
+            }
+          ],
+          "fecha_fin": "2026-05-07T16:33:00.000Z"
+        }
+      }
+    },
+    {
+      "id": "AWB-COPA-9",
+      "awb": "230-70000131",
+      "vuelo": "CM 0125",
+      "manifiesto": "2026-20301",
+      "aerolinea": "COPA AIRLINES",
+      "origen": "PTY",
+      "destino": "LIM",
+      "eta": "2026-05-07T03:15:00-05:00",
+      "fecha_salida_origen": "2026-05-06T21:50:00-05:00",
+      "matricula": "HP-1729CMP",
+      "fecha": "2026-05-07",
+      "tipo_vuelo": "PAX",
+      "tipo": "COMERCIAL",
+      "consignatario_id": "CLI-TEMU",
+      "agente_carga": "TRANSBER S.A.C.",
+      "warehouse": "30047000700281",
+      "tipo_almacenamiento": "COURIER BAGS",
+      "shipper": "PDD EXPORT LOGISTICS CO. LTD",
+      "fecha_emision": "2026-05-04T05:40:00-05:00",
+      "manifiesto_carga": {
+        "numero_manifiesto": "2026-20301",
+        "codigo_transportista": "CM",
+        "capitan": "Fernando Quispe Tito",
+        "identidad_capitan": "PAS-380721",
+        "matricula": "HP-1729CMP",
+        "tipo_medio_transporte": "251Y",
+        "puerto_zarpe": "PAPTY",
+        "tipo_lugar_descarga": "88",
+        "lugar_descarga": "3507",
+        "puerto_intermedio": null,
+        "fecha_zarpe": "2026-05-06T21:50:00-05:00",
+        "fecha_zarpe_intermedio": null,
+        "fecha_estimada_llegada": "2026-05-07T03:15:00-05:00",
+        "fecha_numeracion": "2026-05-03T04:10:00-05:00",
+        "fecha_incorporacion_guias": "2026-05-06T09:45:00-05:00"
+      },
+      "volante": "VOL-2026-30155",
+      "handling_pagado": true,
+      "bultos_esperados": 18,
+      "bultos_recibidos": 18,
+      "kgs_esperados": 290.6,
+      "kgs_recibidos": 290.6,
+      "bultos_mal_estado": 0,
+      "bultos_faltantes": 0,
+      "tarja_porcentaje": 100,
+      "status": "DESPACHADO_A_ESEER",
+      "dam": "230-26-S6I-020065-54-617",
+      "canal_dam": {
+        "numero": "2302651080101",
+        "color": "VERDE",
+        "con_levante": true,
+        "agencia_aduana": "BEAGLE AGENCIA DE ADUANA S.A."
+      },
+      "alertas_activas_ids": [],
+      "timeline": {
+        "aerolinea": {
+          "estado": "COMPLETADO",
+          "fecha_inicio": "2026-05-03T04:10:00-05:00",
+          "fecha_fin": "2026-05-06T09:45:00-05:00",
+          "subeventos": [
+            {
+              "nombre": "Numeracion de Manifiesto",
+              "estado": "COMPLETADO",
+              "fecha": "2026-05-03T04:10:00-05:00"
+            },
+            {
+              "nombre": "Incorporacion de guia",
+              "estado": "COMPLETADO",
+              "fecha": "2026-05-06T09:45:00-05:00"
+            }
+          ]
+        },
+        "recepcion": {
+          "estado": "COMPLETADO",
+          "fecha_inicio": "2026-05-07T08:42:00.000Z",
+          "fecha_fin": "2026-05-07T09:07:00.000Z",
+          "subeventos": [
+            {
+              "nombre": "Generacion de turno",
+              "fecha": "2026-05-07T08:42:00.000Z",
+              "estado": "COMPLETADO"
+            },
+            {
+              "nombre": "En dique",
+              "fecha": "2026-05-07T08:52:00.000Z",
+              "estado": "COMPLETADO"
+            },
+            {
+              "nombre": "Inspeccion visual",
+              "fecha": "2026-05-07T09:07:00.000Z",
+              "estado": "COMPLETADO"
+            }
+          ]
+        },
+        "tarja": {
+          "estado": "COMPLETADO",
+          "fecha_inicio": "2026-05-07T09:17:00.000Z",
+          "fecha_fin": "2026-05-07T10:17:00.000Z",
+          "subeventos": [
+            {
+              "nombre": "Inicio tarja",
+              "fecha": "2026-05-07T09:17:00.000Z",
+              "estado": "COMPLETADO"
+            },
+            {
+              "nombre": "Conteo de bultos",
+              "fecha": "2026-05-07T09:52:00.000Z",
+              "estado": "COMPLETADO",
+              "detalle": {
+                "contados": 18,
+                "esperados": 18
+              }
+            },
+            {
+              "nombre": "Diferencias detectadas",
+              "fecha": "2026-05-07T10:17:00.000Z",
+              "estado": "COMPLETADO",
+              "detalle": {
+                "diferencias": 0
+              }
+            }
+          ]
+        },
+        "almacenamiento": {
+          "estado": "COMPLETADO",
+          "fecha_inicio": "2026-05-07T10:22:00.000Z",
+          "fecha_fin": "2026-05-07T12:02:00.000Z",
+          "dias_estadia": 0,
+          "subeventos": [
+            {
+              "nombre": "Estadia de carga",
+              "fecha": "2026-05-07T10:22:00.000Z",
+              "estado": "COMPLETADO"
+            },
+            {
+              "nombre": "Pesado",
+              "fecha": "2026-05-07T11:12:00.000Z",
+              "estado": "COMPLETADO",
+              "detalle": {
+                "kgs": 290.6
+              }
+            },
+            {
+              "nombre": "Asignacion de canal",
+              "fecha": "2026-05-07T12:02:00.000Z",
+              "estado": "COMPLETADO",
+              "detalle": {
+                "canal": "VERDE"
+              }
+            }
+          ]
+        },
+        "aduanas": {
+          "estado": "COMPLETADO",
+          "fecha_inicio": "2026-05-07T12:08:00.000Z",
+          "fecha_fin": "2026-05-07T12:12:00.000Z",
+          "subeventos": [
+            {
+              "nombre": "Transmision de descarga de mercancia",
+              "fecha": "2026-05-07T12:08:00.000Z",
+              "estado": "COMPLETADO"
+            },
+            {
+              "nombre": "Emision de volante",
+              "fecha": "2026-05-07T12:11:00.000Z",
+              "estado": "COMPLETADO"
+            },
+            {
+              "nombre": "Aviso de llegada",
+              "fecha": "2026-05-07T12:12:00.000Z",
+              "estado": "COMPLETADO"
+            }
+          ]
+        },
+        "despacho_eseer": {
+          "estado": "COMPLETADO",
+          "fecha_inicio": "2026-05-07T12:24:00.000Z",
+          "subeventos": [
+            {
+              "nombre": "Facturacion handling",
+              "fecha": "2026-05-07T12:24:00.000Z",
+              "estado": "COMPLETADO"
+            },
+            {
+              "nombre": "Facturacion traslado postal",
+              "fecha": "2026-05-07T12:49:00.000Z",
+              "estado": "COMPLETADO"
+            },
+            {
+              "nombre": "Generacion de turno",
+              "fecha": "2026-05-07T13:29:00.000Z",
+              "estado": "COMPLETADO"
+            },
+            {
+              "nombre": "Ingreso de transportista",
+              "fecha": "2026-05-07T14:59:00.000Z",
+              "estado": "COMPLETADO",
+              "detalle": {
+                "placa": "B7K-921"
+              }
+            },
+            {
+              "nombre": "Inicio de estiba",
+              "fecha": "2026-05-07T15:29:00.000Z",
+              "estado": "COMPLETADO"
+            },
+            {
+              "nombre": "Entrega de carga",
+              "fecha": "2026-05-07T16:39:00.000Z",
+              "estado": "COMPLETADO"
+            }
+          ],
+          "fecha_fin": "2026-05-07T16:39:00.000Z"
+        }
+      }
+    },
+    {
+      "id": "AWB-COPA-10",
+      "awb": "230-70000151",
+      "vuelo": "CM 0125",
+      "manifiesto": "2026-20301",
+      "aerolinea": "COPA AIRLINES",
+      "origen": "PTY",
+      "destino": "LIM",
+      "eta": "2026-05-07T03:15:00-05:00",
+      "fecha_salida_origen": "2026-05-06T21:50:00-05:00",
+      "matricula": "HP-1729CMP",
+      "fecha": "2026-05-07",
+      "tipo_vuelo": "PAX",
+      "tipo": "COMERCIAL",
+      "consignatario_id": "CLI-SERHAFEN",
+      "agente_carga": "IFB INTERNATIONAL FREIGHT S.A.C.",
+      "warehouse": "30047000700313",
+      "tipo_almacenamiento": "COURIER BAGS",
+      "shipper": "SHENZHEN GLOBAL FORWARDING CO.",
+      "fecha_emision": "2026-05-04T05:40:00-05:00",
+      "manifiesto_carga": {
+        "numero_manifiesto": "2026-20301",
+        "codigo_transportista": "CM",
+        "capitan": "Fernando Quispe Tito",
+        "identidad_capitan": "PAS-380721",
+        "matricula": "HP-1729CMP",
+        "tipo_medio_transporte": "251Y",
+        "puerto_zarpe": "PAPTY",
+        "tipo_lugar_descarga": "88",
+        "lugar_descarga": "3507",
+        "puerto_intermedio": null,
+        "fecha_zarpe": "2026-05-06T21:50:00-05:00",
+        "fecha_zarpe_intermedio": null,
+        "fecha_estimada_llegada": "2026-05-07T03:15:00-05:00",
+        "fecha_numeracion": "2026-05-03T04:10:00-05:00",
+        "fecha_incorporacion_guias": "2026-05-06T09:45:00-05:00"
+      },
+      "volante": "VOL-2026-30173",
+      "handling_pagado": true,
+      "bultos_esperados": 12,
+      "bultos_recibidos": 12,
+      "kgs_esperados": 195,
+      "kgs_recibidos": 195,
+      "bultos_mal_estado": 0,
+      "bultos_faltantes": 0,
+      "tarja_porcentaje": 100,
+      "status": "DESPACHADO_A_ESEER",
+      "dam": "230-26-S6I-020073-54-617",
+      "canal_dam": {
+        "numero": "2302651080113",
+        "color": "VERDE",
+        "con_levante": true,
+        "agencia_aduana": "BEAGLE AGENCIA DE ADUANA S.A."
+      },
+      "alertas_activas_ids": [],
+      "timeline": {
+        "aerolinea": {
+          "estado": "COMPLETADO",
+          "fecha_inicio": "2026-05-03T04:10:00-05:00",
+          "fecha_fin": "2026-05-06T09:45:00-05:00",
+          "subeventos": [
+            {
+              "nombre": "Numeracion de Manifiesto",
+              "estado": "COMPLETADO",
+              "fecha": "2026-05-03T04:10:00-05:00"
+            },
+            {
+              "nombre": "Incorporacion de guia",
+              "estado": "COMPLETADO",
+              "fecha": "2026-05-06T09:45:00-05:00"
+            }
+          ]
+        },
+        "recepcion": {
+          "estado": "COMPLETADO",
+          "fecha_inicio": "2026-05-07T08:48:00.000Z",
+          "fecha_fin": "2026-05-07T09:13:00.000Z",
+          "subeventos": [
+            {
+              "nombre": "Generacion de turno",
+              "fecha": "2026-05-07T08:48:00.000Z",
+              "estado": "COMPLETADO"
+            },
+            {
+              "nombre": "En dique",
+              "fecha": "2026-05-07T08:58:00.000Z",
+              "estado": "COMPLETADO"
+            },
+            {
+              "nombre": "Inspeccion visual",
+              "fecha": "2026-05-07T09:13:00.000Z",
+              "estado": "COMPLETADO"
+            }
+          ]
+        },
+        "tarja": {
+          "estado": "COMPLETADO",
+          "fecha_inicio": "2026-05-07T09:23:00.000Z",
+          "fecha_fin": "2026-05-07T10:23:00.000Z",
+          "subeventos": [
+            {
+              "nombre": "Inicio tarja",
+              "fecha": "2026-05-07T09:23:00.000Z",
+              "estado": "COMPLETADO"
+            },
+            {
+              "nombre": "Conteo de bultos",
+              "fecha": "2026-05-07T09:58:00.000Z",
+              "estado": "COMPLETADO",
+              "detalle": {
+                "contados": 12,
+                "esperados": 12
+              }
+            },
+            {
+              "nombre": "Diferencias detectadas",
+              "fecha": "2026-05-07T10:23:00.000Z",
+              "estado": "COMPLETADO",
+              "detalle": {
+                "diferencias": 0
+              }
+            }
+          ]
+        },
+        "almacenamiento": {
+          "estado": "COMPLETADO",
+          "fecha_inicio": "2026-05-07T10:28:00.000Z",
+          "fecha_fin": "2026-05-07T12:08:00.000Z",
+          "dias_estadia": 0,
+          "subeventos": [
+            {
+              "nombre": "Estadia de carga",
+              "fecha": "2026-05-07T10:28:00.000Z",
+              "estado": "COMPLETADO"
+            },
+            {
+              "nombre": "Pesado",
+              "fecha": "2026-05-07T11:18:00.000Z",
+              "estado": "COMPLETADO",
+              "detalle": {
+                "kgs": 195
+              }
+            },
+            {
+              "nombre": "Asignacion de canal",
+              "fecha": "2026-05-07T12:08:00.000Z",
+              "estado": "COMPLETADO",
+              "detalle": {
+                "canal": "VERDE"
+              }
+            }
+          ]
+        },
+        "aduanas": {
+          "estado": "COMPLETADO",
+          "fecha_inicio": "2026-05-07T12:14:00.000Z",
+          "fecha_fin": "2026-05-07T12:18:00.000Z",
+          "subeventos": [
+            {
+              "nombre": "Transmision de descarga de mercancia",
+              "fecha": "2026-05-07T12:14:00.000Z",
+              "estado": "COMPLETADO"
+            },
+            {
+              "nombre": "Emision de volante",
+              "fecha": "2026-05-07T12:17:00.000Z",
+              "estado": "COMPLETADO"
+            },
+            {
+              "nombre": "Aviso de llegada",
+              "fecha": "2026-05-07T12:18:00.000Z",
+              "estado": "COMPLETADO"
+            }
+          ]
+        },
+        "despacho_eseer": {
+          "estado": "COMPLETADO",
+          "fecha_inicio": "2026-05-07T12:30:00.000Z",
+          "subeventos": [
+            {
+              "nombre": "Facturacion handling",
+              "fecha": "2026-05-07T12:30:00.000Z",
+              "estado": "COMPLETADO"
+            },
+            {
+              "nombre": "Facturacion traslado postal",
+              "fecha": "2026-05-07T12:55:00.000Z",
+              "estado": "COMPLETADO"
+            },
+            {
+              "nombre": "Generacion de turno",
+              "fecha": "2026-05-07T13:35:00.000Z",
+              "estado": "COMPLETADO"
+            },
+            {
+              "nombre": "Ingreso de transportista",
+              "fecha": "2026-05-07T15:05:00.000Z",
+              "estado": "COMPLETADO",
+              "detalle": {
+                "placa": "B7K-921"
+              }
+            },
+            {
+              "nombre": "Inicio de estiba",
+              "fecha": "2026-05-07T15:35:00.000Z",
+              "estado": "COMPLETADO"
+            },
+            {
+              "nombre": "Entrega de carga",
+              "fecha": "2026-05-07T16:45:00.000Z",
+              "estado": "COMPLETADO"
+            }
+          ],
+          "fecha_fin": "2026-05-07T16:45:00.000Z"
+        }
+      }
+    },
+    {
+      "id": "AWB-COPA-11",
+      "awb": "230-70000171",
+      "vuelo": "CM 0125",
+      "manifiesto": "2026-20301",
+      "aerolinea": "COPA AIRLINES",
+      "origen": "PTY",
+      "destino": "LIM",
+      "eta": "2026-05-07T03:15:00-05:00",
+      "fecha_salida_origen": "2026-05-06T21:50:00-05:00",
+      "matricula": "HP-1729CMP",
+      "fecha": "2026-05-07",
+      "tipo_vuelo": "PAX",
+      "tipo": "COMERCIAL",
+      "consignatario_id": "CLI-FEDEX",
+      "agente_carga": "GAMARRA AIR CARGO Y CIA S.A.C.",
+      "warehouse": "30047000700345",
+      "tipo_almacenamiento": "COURIER BAGS",
+      "shipper": "WHALECO INC.",
+      "fecha_emision": "2026-05-04T05:40:00-05:00",
+      "manifiesto_carga": {
+        "numero_manifiesto": "2026-20301",
+        "codigo_transportista": "CM",
+        "capitan": "Fernando Quispe Tito",
+        "identidad_capitan": "PAS-380721",
+        "matricula": "HP-1729CMP",
+        "tipo_medio_transporte": "251Y",
+        "puerto_zarpe": "PAPTY",
+        "tipo_lugar_descarga": "88",
+        "lugar_descarga": "3507",
+        "puerto_intermedio": null,
+        "fecha_zarpe": "2026-05-06T21:50:00-05:00",
+        "fecha_zarpe_intermedio": null,
+        "fecha_estimada_llegada": "2026-05-07T03:15:00-05:00",
+        "fecha_numeracion": "2026-05-03T04:10:00-05:00",
+        "fecha_incorporacion_guias": "2026-05-06T09:45:00-05:00"
+      },
+      "volante": "VOL-2026-30191",
+      "handling_pagado": true,
+      "bultos_esperados": 28,
+      "bultos_recibidos": 28,
+      "kgs_esperados": 410.7,
+      "kgs_recibidos": 410.7,
+      "bultos_mal_estado": 0,
+      "bultos_faltantes": 0,
+      "tarja_porcentaje": 100,
+      "status": "DESPACHADO_A_ESEER",
+      "dam": "230-26-S6I-020081-54-617",
+      "canal_dam": {
+        "numero": "2302651080125",
+        "color": "VERDE",
+        "con_levante": true,
+        "agencia_aduana": "BEAGLE AGENCIA DE ADUANA S.A."
+      },
+      "alertas_activas_ids": [],
+      "timeline": {
+        "aerolinea": {
+          "estado": "COMPLETADO",
+          "fecha_inicio": "2026-05-03T04:10:00-05:00",
+          "fecha_fin": "2026-05-06T09:45:00-05:00",
+          "subeventos": [
+            {
+              "nombre": "Numeracion de Manifiesto",
+              "estado": "COMPLETADO",
+              "fecha": "2026-05-03T04:10:00-05:00"
+            },
+            {
+              "nombre": "Incorporacion de guia",
+              "estado": "COMPLETADO",
+              "fecha": "2026-05-06T09:45:00-05:00"
+            }
+          ]
+        },
+        "recepcion": {
+          "estado": "COMPLETADO",
+          "fecha_inicio": "2026-05-07T08:54:00.000Z",
+          "fecha_fin": "2026-05-07T09:19:00.000Z",
+          "subeventos": [
+            {
+              "nombre": "Generacion de turno",
+              "fecha": "2026-05-07T08:54:00.000Z",
+              "estado": "COMPLETADO"
+            },
+            {
+              "nombre": "En dique",
+              "fecha": "2026-05-07T09:04:00.000Z",
+              "estado": "COMPLETADO"
+            },
+            {
+              "nombre": "Inspeccion visual",
+              "fecha": "2026-05-07T09:19:00.000Z",
+              "estado": "COMPLETADO"
+            }
+          ]
+        },
+        "tarja": {
+          "estado": "COMPLETADO",
+          "fecha_inicio": "2026-05-07T09:29:00.000Z",
+          "fecha_fin": "2026-05-07T10:29:00.000Z",
+          "subeventos": [
+            {
+              "nombre": "Inicio tarja",
+              "fecha": "2026-05-07T09:29:00.000Z",
+              "estado": "COMPLETADO"
+            },
+            {
+              "nombre": "Conteo de bultos",
+              "fecha": "2026-05-07T10:04:00.000Z",
+              "estado": "COMPLETADO",
+              "detalle": {
+                "contados": 28,
+                "esperados": 28
+              }
+            },
+            {
+              "nombre": "Diferencias detectadas",
+              "fecha": "2026-05-07T10:29:00.000Z",
+              "estado": "COMPLETADO",
+              "detalle": {
+                "diferencias": 0
+              }
+            }
+          ]
+        },
+        "almacenamiento": {
+          "estado": "COMPLETADO",
+          "fecha_inicio": "2026-05-07T10:34:00.000Z",
+          "fecha_fin": "2026-05-07T12:14:00.000Z",
+          "dias_estadia": 0,
+          "subeventos": [
+            {
+              "nombre": "Estadia de carga",
+              "fecha": "2026-05-07T10:34:00.000Z",
+              "estado": "COMPLETADO"
+            },
+            {
+              "nombre": "Pesado",
+              "fecha": "2026-05-07T11:24:00.000Z",
+              "estado": "COMPLETADO",
+              "detalle": {
+                "kgs": 410.7
+              }
+            },
+            {
+              "nombre": "Asignacion de canal",
+              "fecha": "2026-05-07T12:14:00.000Z",
+              "estado": "COMPLETADO",
+              "detalle": {
+                "canal": "VERDE"
+              }
+            }
+          ]
+        },
+        "aduanas": {
+          "estado": "COMPLETADO",
+          "fecha_inicio": "2026-05-07T12:20:00.000Z",
+          "fecha_fin": "2026-05-07T12:24:00.000Z",
+          "subeventos": [
+            {
+              "nombre": "Transmision de descarga de mercancia",
+              "fecha": "2026-05-07T12:20:00.000Z",
+              "estado": "COMPLETADO"
+            },
+            {
+              "nombre": "Emision de volante",
+              "fecha": "2026-05-07T12:23:00.000Z",
+              "estado": "COMPLETADO"
+            },
+            {
+              "nombre": "Aviso de llegada",
+              "fecha": "2026-05-07T12:24:00.000Z",
+              "estado": "COMPLETADO"
+            }
+          ]
+        },
+        "despacho_eseer": {
+          "estado": "COMPLETADO",
+          "fecha_inicio": "2026-05-07T12:36:00.000Z",
+          "subeventos": [
+            {
+              "nombre": "Facturacion handling",
+              "fecha": "2026-05-07T12:36:00.000Z",
+              "estado": "COMPLETADO"
+            },
+            {
+              "nombre": "Facturacion traslado postal",
+              "fecha": "2026-05-07T13:01:00.000Z",
+              "estado": "COMPLETADO"
+            },
+            {
+              "nombre": "Generacion de turno",
+              "fecha": "2026-05-07T13:41:00.000Z",
+              "estado": "COMPLETADO"
+            },
+            {
+              "nombre": "Ingreso de transportista",
+              "fecha": "2026-05-07T15:11:00.000Z",
+              "estado": "COMPLETADO",
+              "detalle": {
+                "placa": "B7K-921"
+              }
+            },
+            {
+              "nombre": "Inicio de estiba",
+              "fecha": "2026-05-07T15:41:00.000Z",
+              "estado": "COMPLETADO"
+            },
+            {
+              "nombre": "Entrega de carga",
+              "fecha": "2026-05-07T16:51:00.000Z",
+              "estado": "COMPLETADO"
+            }
+          ],
+          "fecha_fin": "2026-05-07T16:51:00.000Z"
+        }
+      }
     }
   ],
   "alertas": [
@@ -60231,5 +62588,48 @@
       ]
     }
   ],
-  "notificaciones_log": []
+  "notificaciones_log": [
+    {
+      "id": "NOT-001",
+      "fecha": "2026-05-08T15:28:57.516Z",
+      "canal": "WHATSAPP",
+      "destinatario": "+51953102972",
+      "alerta_id": null,
+      "awb_master_id": null,
+      "estado": "ENVIADO",
+      "error": null,
+      "message_id_proveedor": "mock-wa-tpl-1779982137471",
+      "mock": true,
+      "origen": "SIMULACION",
+      "template_name": "hello_world"
+    },
+    {
+      "id": "NOT-002",
+      "fecha": "2026-05-08T15:29:36.880Z",
+      "canal": "WHATSAPP",
+      "destinatario": "+51953102972",
+      "alerta_id": null,
+      "awb_master_id": null,
+      "estado": "FALLIDO",
+      "error": "(#131030) Recipient phone number not in allowed list",
+      "message_id_proveedor": null,
+      "mock": false,
+      "origen": "SIMULACION",
+      "template_name": "hello_world"
+    },
+    {
+      "id": "NOT-003",
+      "fecha": "2026-05-08T15:30:59.296Z",
+      "canal": "WHATSAPP",
+      "destinatario": "+51922878754",
+      "alerta_id": null,
+      "awb_master_id": null,
+      "estado": "ENVIADO",
+      "error": null,
+      "message_id_proveedor": "wamid.HBgLNTE5MjI4Nzg3NTQVAgARGBJFNEM5NzJGOUNFOTU3NTU3MTIA",
+      "mock": false,
+      "origen": "SIMULACION",
+      "template_name": "hello_world"
+    }
+  ]
 }

@@ -265,6 +265,7 @@ const AEROLINEA_SHORT = {
   'LATAM AIRLINES': 'LATAM',
   'ATLAS AIR INC.': 'ATLAS',
   'IBERIA LINEAS AEREAS': 'IBERIA',
+  'COPA AIRLINES': 'COPA',
 };
 
 function shortName(aerolinea) {

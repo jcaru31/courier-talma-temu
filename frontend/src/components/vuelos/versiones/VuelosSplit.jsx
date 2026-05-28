@@ -43,12 +43,13 @@ const CATEGORIAS = [
 export default function VuelosSplit({ items, loading, prefilterQuery, filtros = {}, onFiltrosChange }) {
   const [sel, setSel] = useState(null);
 
-  // Auto-selecciona el primer vuelo cuando cambia la lista.
+  // Al abrir el tablero no se preselecciona ningun vuelo: la vista detalle
+  // queda en su estado vacio hasta que el usuario elija un vuelo. Si la
+  // seleccion actual deja de existir tras cambiar filtros, la limpiamos.
   useEffect(() => {
-    if (items?.length && !items.some((v) => v.manifiesto === sel)) {
-      setSel(items[0].manifiesto);
+    if (sel && !items?.some((v) => v.manifiesto === sel)) {
+      setSel(null);
     }
-    if (!items?.length) setSel(null);
   }, [items, sel]);
 
   // Buscador con debounce (300ms). El input mantiene su valor local para no
@@ -403,13 +404,15 @@ function SlaResponsabilidad({ sla }) {
   if (!sla?.ata) return null;
   const cerrado = !!sla.vuelo_cerrado;
   const resp = sla.responsabilidad || (cerrado ? 'COURIER' : 'TALMA');
+  // Etiqueta visible: la zona "COURIER" se renombra a "ESSER" en UI.
+  const respLabel = resp === 'COURIER' ? 'ESSER' : resp;
   const transcurridos = sla.minutos_transcurridos || 0;
 
   if (cerrado) {
     const cierreExcedido = transcurridos >= TALMA_RED_MIN;
     return (
       <RichTooltipTrigger
-        title="COURIER"
+        title="ESSER"
         rows={[
           { label: 'Hora de cierre', valor: formatHora(sla.cierre_iso) },
           {
@@ -424,7 +427,7 @@ function SlaResponsabilidad({ sla }) {
             <polyline points="20 6 9 17 4 12" />
           </svg>
           <span className="opacity-70">Resp.:</span>
-          <span>{resp}</span>
+          <span>{respLabel}</span>
         </span>
       </RichTooltipTrigger>
     );

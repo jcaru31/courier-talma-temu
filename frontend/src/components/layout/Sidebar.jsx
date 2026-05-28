@@ -3,8 +3,8 @@ import { NavLink } from 'react-router-dom';
 export default function Sidebar() {
   return (
     <aside className="w-16 bg-navy text-white flex flex-col items-center py-4 shrink-0">
-      <div className="mb-6 font-bold text-sm">
-        T<span className="text-ok">.</span>
+      <div className="mb-6">
+        <img src="/logo.png" alt="Talma" className="w-9 h-9 object-contain" />
       </div>
 
       <nav className="flex flex-col gap-2">
@@ -38,6 +38,15 @@ function IconAvion() {
   return (
     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <path d="M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.2c.4-.3.6-.7.5-1.2z" />
+    </svg>
+  );
+}
+
+function IconBell() {
+  return (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9" />
+      <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" />
     </svg>
   );
 }

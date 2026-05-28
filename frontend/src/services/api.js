@@ -38,4 +38,19 @@ export const api = {
     request(`/alertas/sincronizar-notificaciones`, { method: 'POST' }),
   listNotificaciones: () => request('/notificaciones'),
   health: () => request('/health'),
+
+  // Panel de SIMULACION (vuelo 5Y 8676)
+  getSimulacionTemplates: () => request('/simulacion/templates'),
+  getSimulacionVuelo: () => request('/simulacion/vuelo/5Y8676'),
+  simularNotificacion: async ({ tipoAlerta, telefono, guia }) => {
+    // No usa `request` porque necesitamos preservar el body en errores
+    // (codigo + hint de Meta) y no solo el mensaje.
+    const res = await fetch('/api/simulacion/vuelo/notificar', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ tipoAlerta, telefono, guia }),
+    });
+    const body = await res.json().catch(() => ({ ok: false, error: 'Respuesta invalida' }));
+    return { httpStatus: res.status, ...body };
+  },
 };

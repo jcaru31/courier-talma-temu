@@ -2,10 +2,11 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 
 const OPCIONES_DIA = [
-  { value: '', label: 'Últimos 7 días (hoy + 7 atrás)' },
-  { value: 'incluir_manana', label: 'Mañana + últimos 7 días' },
-  { value: 'manana', label: 'Solo mañana (programados)' },
+  { value: '', label: 'Ayer y hoy (por defecto)' },
   { value: 'hoy', label: 'Solo hoy' },
+  { value: 'manana', label: 'Solo mañana (programados)' },
+  { value: 'ultimos7', label: 'Últimos 7 días' },
+  { value: 'incluir_manana', label: 'Mañana + últimos 7 días' },
   { value: 'anteriores', label: 'Solo anteriores (sin hoy/mañana)' },
   { value: 'todos', label: 'Todos los vuelos' },
 ];
@@ -14,6 +15,7 @@ const OPCIONES_AEROLINEA = [
   { value: '', label: 'Todas' },
   { value: 'LATAM', label: 'LATAM' },
   { value: 'ATLAS', label: 'ATLAS' },
+  { value: 'COPA', label: 'COPA' },
 ];
 
 // Ventana del tablero: 7 días atrás y hasta mañana (vuelos programados del día
